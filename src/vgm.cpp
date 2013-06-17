@@ -1,6 +1,5 @@
 #include "vgm.h"
 #include <afc/cpu/primitive.h>
-#include <afc/DisposablePtr.h>
 #include <afc/utils.h>
 #include <zlib.h>
 #include <climits>
@@ -12,7 +11,6 @@ using afc::Exception;
 using afc::IOException;
 using afc::MalformedFormatException;
 using afc::UnsupportedFormatException;
-using afc::DisposablePtr;
 using afc::File;
 using afc::endsWith;
 using namespace std;
@@ -67,15 +65,6 @@ namespace
 		unsigned char buf[4];
 		UInt32<>(val).toBytes<LE>(buf);
 		out.write(buf, 4);
-	}
-
-	typedef void (DisposeOfFile)(FILE *);
-
-	void closeFile(FILE * const file)
-	{
-		if (fclose(file) != 0) {
-			throw IOException("File is not closed properly!");
-		}
 	}
 
 	// TODO a more efficient implementation could be here
