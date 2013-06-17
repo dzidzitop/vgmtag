@@ -42,10 +42,15 @@ namespace vgm
 
 		struct VGMHeader
 		{
+			// absolute positions of VGM header constituents in the header
 			static const uint32_t POS_EOF = 0x4, POS_SN_CLOCK = 0xc, POS_YM2413_CLOCK = 0x10, POS_GD3 = 0x14, POS_LOOP = 0x1c,
 						POS_YM2112_CLOCK = 0x2c, POS_YM2151_CLOCK = 0x30, POS_VGM_DATA = 0x34;
-			static const uint32_t VGM_FILE_ID = 0x206d6756; // in LE
-			static const uint32_t VGM_FILE_VERSION = 0x00000150; // version in LE
+
+			/* Despite of the platform endianness these values are stored in files in the little-endian format and
+			   are converted into the platform format while parsing the file. */
+			static const uint32_t VGM_FILE_ID = 0x206d6756; // 'Vgm ' as 4 bytes casted to little-endian int32
+			static const uint32_t VGM_FILE_VERSION = 0x00000150;
+
 			static const uint32_t HEADER_SIZE = 0x40;
 
 			uint32_t id, eofOffset, version, snClock,
@@ -55,8 +60,11 @@ namespace vgm
 		};
 		struct GD3Info
 		{
-			static const uint32_t VGM_FILE_GD3_ID = 0x20336447; // 'Gd3 ' in LE
-			static const uint32_t VGM_FILE_GD3_VERSION = 0x00000100; // version in LE
+			/* Despite of the platform endianness these values are stored in files in the little-endian format and
+			   are converted into the platform format while parsing the file. */
+			static const uint32_t VGM_FILE_GD3_ID = 0x20336447; // 'Gd3 ' as 4 bytes casted to little-endian int32
+			static const uint32_t VGM_FILE_GD3_VERSION = 0x00000100;
+
 			static const uint32_t HEADER_SIZE = 0x0c;
 
 			size_t dataSize;
