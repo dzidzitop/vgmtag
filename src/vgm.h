@@ -15,7 +15,7 @@ namespace vgm
 		void save(const afc::File &dest, const bool compress = false);
 
 		/*
-		 * a) all tag values must be consequtive integers starting from 0
+		 * a) all tag values must be consecutive integers starting from 0
 		 * b) title must be the first tag value
 		 * c) notes must be the last tag value
 		 */
