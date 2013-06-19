@@ -112,7 +112,6 @@ inline u16string stringToUTF16LE(const string &src)
 		return u16string();
 	}
 	iconv_t state = iconv_open("UTF-16LE", charmap);
-	cout << charmap << endl;
 	char * srcBuf = const_cast<char *>(src.c_str()); // for some reason iconv takes non-const source buffer
 	size_t srcSize = src.size();
 	const size_t destSize = 4 * srcSize; // max length of a utf-8 character is 4 bytes
@@ -134,10 +133,9 @@ inline u16string stringToUTF16LE(const string &src)
 		throw MalformedFormatException("unsupported character sequence");
 	}
 
-	const size_t resultSize = bufSize / 2;
 	const char * const buf = destBuf.get();
 	u16string result;
-	result.reserve(resultSize);
+	result.reserve(bufSize/2);
 	for (size_t i = 0; i < bufSize; i+=2) {
 		const char16_t codePoint = static_cast<unsigned char>(buf[i]) + (static_cast<unsigned char>(buf[i+1])<<8);
 		result.push_back(codePoint);
