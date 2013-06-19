@@ -25,8 +25,8 @@ namespace vgm
 			author = 6, authorJP = 7, date = 8, converter = 9, notes = 10
 		};
 
-		void setTag(const Tag name, const std::wstring &value);
-		const std::wstring &getTag(const Tag name) const;
+		void setTag(const Tag name, const std::u16string &value);
+		const std::u16string &getTag(const Tag name) const;
 	private:
 		VGMFile() : m_data(0), m_dataSize(0) {}
 
@@ -68,7 +68,7 @@ namespace vgm
 			static const uint32_t HEADER_SIZE = 0x0c;
 
 			size_t dataSize;
-			std::wstring tags[static_cast<size_t>(Tag::notes) + 1];
+			std::u16string tags[static_cast<size_t>(Tag::notes) + 1];
 		};
 
 		VGMHeader m_header;

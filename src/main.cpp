@@ -1,10 +1,11 @@
 #include <exception>
 #include <map>
 #include <cstdio>
-#include <cwchar>
 #include <memory>
 #include <locale>
 #include <string>
+#include <langinfo.h>
+#include <iconv.h>
 
 #include <getopt.h>
 
@@ -13,6 +14,7 @@
 
 #include <afc/Exception.h>
 #include <afc/File.h>
+#include <afc/math_utils.h>
 
 using namespace std;
 using namespace afc;
@@ -96,26 +98,60 @@ There is NO WARRANTY, to the extent permitted by law.\n\
 Written by D\x017Amitry La\x016D\x010Duk." << endl;
 }
 
-inline wstring stringToWideString(const string &src)
+static const char * charmap;
+
+void initLocaleContext()
 {
-	if (src.empty()) {
-		return wstring();
-	}
-	const size_t maxSize = src.size();
-	unique_ptr<wchar_t[]> buf(new wchar_t[maxSize]);
-	const size_t count = mbstowcs(buf.get(), src.c_str(), maxSize);
-	if (count == static_cast<std::size_t>(-1)) {
-		throw MalformedFormatException("unsupported character sequence");
-	}
-	return wstring(buf.get(), count);
+	locale::global(locale(""));
+	charmap = nl_langinfo(CODESET);
 }
 
-typedef map<Tag, const wstring> M;
-typedef pair<Tag, const wstring> P;
+inline u16string stringToUTF16LE(const string &src)
+{
+	if (src.empty()) {
+		return u16string();
+	}
+	iconv_t state = iconv_open("UTF-16LE", charmap);
+	cout << charmap << endl;
+	char * srcBuf = const_cast<char *>(src.c_str()); // for some reason iconv takes non-const source buffer
+	size_t srcSize = src.size();
+	const size_t destSize = 4 * srcSize; // max length of a utf-8 character is 4 bytes
+	size_t destCharsLeft = destSize;
+	unique_ptr<char[]> destBuf(new char[destSize]);
+	char * mutableDestBuf = destBuf.get(); // iconv modifies the pointers to the buffers
+	const size_t count = iconv(state, &srcBuf, &srcSize, &mutableDestBuf, &destCharsLeft);
+	iconv_close(state); // TODO call this in a destructor. Create a wrapper for iconv
+	if (count == static_cast<size_t>(-1)) {
+		// TODO handle errors using errno
+		// The following errors can occur, among others:
+		// E2BIG There is not sufficient room at *outbuf.
+		// EILSEQ An invalid multibyte sequence has been encountered in the input.
+		// EINVAL An incomplete multibyte sequence has been encountered in the input.
+		throw MalformedFormatException("unsupported character sequence");
+	}
+	const size_t bufSize = destSize - destCharsLeft;
+	if (isOdd(bufSize)) {
+		throw MalformedFormatException("unsupported character sequence");
+	}
+
+	const size_t resultSize = bufSize / 2;
+	const char * const buf = destBuf.get();
+	u16string result;
+	result.reserve(resultSize);
+	for (size_t i = 0; i < bufSize; i+=2) {
+		const char16_t codePoint = static_cast<unsigned char>(buf[i]) + (static_cast<unsigned char>(buf[i+1])<<8);
+		result.push_back(codePoint);
+	}
+	return result;
+}
+
+typedef map<Tag, const u16string> M;
+typedef M::value_type P;
 
 int main(const int argc, char * argv[])
 try {
-	locale::global(locale(""));
+	initLocaleContext();
+
 	M tags;
 
 	int c;
@@ -123,38 +159,38 @@ try {
 	while ((c = ::getopt_long(argc, argv, "h", options, &optionIndex)) != -1) {
 		switch (c) {
 		case 't':
-			tags.insert(P(Tag::title, stringToWideString(::optarg)));
+			tags.insert(P(Tag::title, stringToUTF16LE(::optarg)));
 			break;
 		case 'T':
-			tags.insert(P(Tag::titleJP, stringToWideString(::optarg)));
+			tags.insert(P(Tag::titleJP, stringToUTF16LE(::optarg)));
 			break;
 		case 'g':
-			tags.insert(P(Tag::game, stringToWideString(::optarg)));
+			tags.insert(P(Tag::game, stringToUTF16LE(::optarg)));
 			break;
 		case 'G':
-			tags.insert(P(Tag::gameJP, stringToWideString(::optarg)));
+			tags.insert(P(Tag::gameJP, stringToUTF16LE(::optarg)));
 			break;
 		case 's':
-			tags.insert(P(Tag::system, stringToWideString(::optarg)));
+			tags.insert(P(Tag::system, stringToUTF16LE(::optarg)));
 			break;
 		case 'S':
-			tags.insert(P(Tag::systemJP, stringToWideString(::optarg)));
+			tags.insert(P(Tag::systemJP, stringToUTF16LE(::optarg)));
 			break;
 		case 'a':
-			tags.insert(P(Tag::author, stringToWideString(::optarg)));
+			tags.insert(P(Tag::author, stringToUTF16LE(::optarg)));
 			break;
 		case 'A':
-			tags.insert(P(Tag::authorJP, stringToWideString(::optarg)));
+			tags.insert(P(Tag::authorJP, stringToUTF16LE(::optarg)));
 			break;
 		case 'd':
-			tags.insert(P(Tag::date, stringToWideString(::optarg)));
+			tags.insert(P(Tag::date, stringToUTF16LE(::optarg)));
 			break;
 		case 'c':
-			tags.insert(P(Tag::converter, stringToWideString(::optarg)));
+			tags.insert(P(Tag::converter, stringToUTF16LE(::optarg)));
 			break;
 		case 'n':
 			// TODO think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags.insert(P(Tag::notes, stringToWideString(::optarg)));
+			tags.insert(P(Tag::notes, stringToUTF16LE(::optarg)));
 			break;
 		case 'h':
 			printUsage(true);

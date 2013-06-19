@@ -26,13 +26,13 @@ namespace
 		}
 	}
 
-	// TODO process wchar_t gracefully
-	unsigned readTag(wstring &dest, vgm::InputStream &src)
+	// TODO process char16_t gracefully
+	unsigned readTag(u16string &dest, vgm::InputStream &src)
 	{
 		unsigned char buf[4] = {0, 0, 0, 0}; // 2 of 4 are really used. This is the way to avoid out-of-bounds reads
 		for (;;) {
 			readBytes(buf, 2, src);
-			const wchar_t c = UInt32<>::fromBytes<LE>(buf);
+			const char16_t c = UInt32<>::fromBytes<LE>(buf);
 			if (c == 0) {
 				break;
 			}
@@ -41,8 +41,8 @@ namespace
 		return 2*(dest.size()+1);
 	}
 
-	// TODO process wchar_t gracefully
-	void writeTag(const wstring &src, vgm::OutputStream &out)
+	// TODO process char16_t gracefully
+	void writeTag(const u16string &src, vgm::OutputStream &out)
 	{
 		unsigned char buf[4]; // 2 of 4 are really used. This is the way to avoid out-of-bounds writes
 		for (size_t i = 0, n = src.size(); i < n; ++i) {
@@ -230,12 +230,12 @@ void vgm::VGMFile::normalise()
 	m_header.eofOffset = fileSize - VGMHeader::POS_EOF;
 }
 
-void vgm::VGMFile::setTag(const Tag name, const wstring &value)
+void vgm::VGMFile::setTag(const Tag name, const u16string &value)
 {
 	m_gd3Info.tags[static_cast<size_t>(name)] = value;
 }
 
-const wstring &vgm::VGMFile::getTag(const Tag name) const
+const u16string &vgm::VGMFile::getTag(const Tag name) const
 {
 	return m_gd3Info.tags[static_cast<size_t>(name)];
 }
