@@ -114,7 +114,7 @@ inline u16string stringToUTF16LE(const string &src)
 	iconv_t state = iconv_open("UTF-16LE", charmap);
 	char * srcBuf = const_cast<char *>(src.c_str()); // for some reason iconv takes non-const source buffer
 	size_t srcSize = src.size();
-	const size_t destSize = 4 * srcSize; // max length of a utf-8 character is 4 bytes
+	const size_t destSize = 4 * srcSize; // max length of a UTF16-LE character is 4 bytes
 	size_t destCharsLeft = destSize;
 	unique_ptr<char[]> destBuf(new char[destSize]);
 	char * mutableDestBuf = destBuf.get(); // iconv modifies the pointers to the buffers
