@@ -4,8 +4,8 @@
 #include <zlib.h>
 #include <climits>
 #include <memory>
-#include <cstdio>
 
+using afc::UInt16;
 using afc::UInt32;
 using afc::Exception;
 using afc::IOException;
@@ -26,13 +26,12 @@ namespace
 		}
 	}
 
-	// TODO process char16_t gracefully
 	unsigned readTag(u16string &dest, vgm::InputStream &src)
 	{
-		unsigned char buf[4] = {0, 0, 0, 0}; // 2 of 4 are really used. This is the way to avoid out-of-bounds reads
+		unsigned char buf[2];
 		for (;;) {
 			readBytes(buf, 2, src);
-			const char16_t c = UInt32<>::fromBytes<LE>(buf);
+			const char16_t c = UInt16<>::fromBytes<LE>(buf);
 			if (c == 0) {
 				break;
 			}
@@ -41,15 +40,14 @@ namespace
 		return 2*(dest.size()+1);
 	}
 
-	// TODO process char16_t gracefully
 	void writeTag(const u16string &src, vgm::OutputStream &out)
 	{
-		unsigned char buf[4]; // 2 of 4 are really used. This is the way to avoid out-of-bounds writes
+		unsigned char buf[2];
 		for (size_t i = 0, n = src.size(); i < n; ++i) {
-			UInt32<>(src[i]).toBytes<LE>(buf);
+			UInt16<>(src[i]).toBytes<LE>(buf);
 			out.write(buf, 2);
 		}
-		UInt32<>(L'\0').toBytes<LE>(buf);
+		UInt16<>(UInt16<>::type(0)).toBytes<LE>(buf);
 		out.write(buf, 2);
 	}
 
