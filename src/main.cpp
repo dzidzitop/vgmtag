@@ -137,6 +137,7 @@ inline u16string stringToUTF16LE(const string &src)
 	u16string result;
 	result.reserve(bufSize/2);
 	for (size_t i = 0; i < bufSize; i+=2) {
+		// TODO support big-endian platforms. The line below assumes that the target platform is little-endian
 		const char16_t codePoint = static_cast<unsigned char>(buf[i]) + (static_cast<unsigned char>(buf[i+1])<<8);
 		result.push_back(codePoint);
 	}
