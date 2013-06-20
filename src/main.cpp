@@ -15,6 +15,7 @@
 #include <afc/Exception.h>
 #include <afc/File.h>
 #include <afc/math_utils.h>
+#include <afc/cpu/primitive.h>
 
 using namespace std;
 using namespace afc;
@@ -106,6 +107,8 @@ void initLocaleContext()
 	charmap = nl_langinfo(CODESET);
 }
 
+const afc::endianness LE = afc::endianness::LE;
+
 inline u16string stringToUTF16LE(const string &src)
 {
 	if (src.empty()) {
@@ -137,8 +140,7 @@ inline u16string stringToUTF16LE(const string &src)
 	u16string result;
 	result.reserve(bufSize/2);
 	for (size_t i = 0; i < bufSize; i+=2) {
-		// TODO support big-endian platforms. The line below assumes that the target platform is little-endian
-		const char16_t codePoint = static_cast<unsigned char>(buf[i]) + (static_cast<unsigned char>(buf[i+1])<<8);
+		const char16_t codePoint = UInt16<LE>::fromBytes<LE>(&buf[i]); // a UTF16-LE code point
 		result.push_back(codePoint);
 	}
 	return result;
