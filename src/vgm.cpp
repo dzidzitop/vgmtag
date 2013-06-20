@@ -47,7 +47,7 @@ namespace
 			UInt16<LE>(src[i], LE).toBytes<LE>(buf);
 			out.write(buf, 2);
 		}
-		UInt16<>(UInt16<>::type(0)).toBytes<LE>(buf);
+		UInt16<LE>(UInt16<LE>::type(0)).toBytes<LE>(buf);
 		out.write(buf, 2);
 	}
 
