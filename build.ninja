@@ -1,0 +1,27 @@
+srcDir=src
+buildDir=build
+cxxFlags=-I"lib/include" -Wall -fPIC -std=c++11 -O2
+ldFlags=-Llib
+
+rule cxx
+  depfile=$out.d
+  command=g++ $cxxFlags -MMD -MF $out.d -c $in -o $out
+
+rule bin
+  command=g++ $ldFlags -o $out $in $libs
+
+build $buildDir/main.o: cxx $srcDir/main.cpp
+build $buildDir/stream.o: cxx $srcDir/stream.cpp
+build $buildDir/vgm.o: cxx $srcDir/vgm.cpp
+
+build $buildDir/vgmtag: bin $
+    $buildDir/main.o $
+    $buildDir/stream.o $
+    $buildDir/vgm.o
+  libs=-lz -lafc
+
+build app: phony $buildDir/vgmtag
+
+build all: phony app
+
+default all
