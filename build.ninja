@@ -11,12 +11,10 @@ rule bin
   command=g++ $ldFlags -o $out $in $libs
 
 build $buildDir/main.o: cxx $srcDir/main.cpp
-build $buildDir/stream.o: cxx $srcDir/stream.cpp
 build $buildDir/vgm.o: cxx $srcDir/vgm.cpp
 
 build $buildDir/vgmtag: bin $
     $buildDir/main.o $
-    $buildDir/stream.o $
     $buildDir/vgm.o
   libs=-lz -lafc
 

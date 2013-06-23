@@ -1,4 +1,4 @@
-#include "stream.h"
+#include <afc/stream.h>
 #include <afc/File.h>
 #include <afc/Exception.h>
 #include <stdint.h>
@@ -32,13 +32,13 @@ namespace vgm
 
 		void normalise();
 
-		void readHeader(InputStream &in);
-		void readGD3Info(InputStream &in);
-		void readData(InputStream &in);
+		void readHeader(afc::InputStream &in);
+		void readGD3Info(afc::InputStream &in);
+		void readData(afc::InputStream &in);
 
-		void writeHeader(OutputStream &out) const;
-		void writeGD3Info(OutputStream &out) const;
-		void writeData(OutputStream &out) const;
+		void writeHeader(afc::OutputStream &out) const;
+		void writeGD3Info(afc::OutputStream &out) const;
+		void writeData(afc::OutputStream &out) const;
 
 		struct VGMHeader
 		{

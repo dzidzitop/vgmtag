@@ -1,32 +1,24 @@
 #include "vgm.h"
 #include <afc/cpu/primitive.h>
 #include <afc/utils.h>
-#include <zlib.h>
 #include <climits>
 #include <memory>
 
-using afc::UInt16;
-using afc::UInt32;
-using afc::Exception;
-using afc::IOException;
-using afc::MalformedFormatException;
-using afc::UnsupportedFormatException;
-using afc::File;
-using afc::endsWith;
+using namespace afc;
 using namespace std;
 
 namespace
 {
 	static const afc::endianness LE = afc::endianness::LE;
 
-	inline void readBytes(unsigned char buf[], const size_t n, vgm::InputStream &in)
+	inline void readBytes(unsigned char buf[], const size_t n, InputStream &in)
 	{
 		if (in.read(buf, n) != n) {
 			throw MalformedFormatException("Premature end of file");
 		}
 	}
 
-	unsigned readTag(u16string &dest, vgm::InputStream &src)
+	unsigned readTag(u16string &dest, InputStream &src)
 	{
 		unsigned char buf[2];
 		for (;;) {
@@ -40,7 +32,7 @@ namespace
 		return 2*(dest.size()+1);
 	}
 
-	void writeTag(const u16string &src, vgm::OutputStream &out)
+	void writeTag(const u16string &src, OutputStream &out)
 	{
 		unsigned char buf[2];
 		for (size_t i = 0, n = src.size(); i < n; ++i) {
@@ -51,14 +43,14 @@ namespace
 		out.write(buf, 2);
 	}
 
-	uint32_t readUInt32(vgm::InputStream &in)
+	uint32_t readUInt32(InputStream &in)
 	{
 		unsigned char buf[4];
 		in.read(buf, 4);
 		return UInt32<>::fromBytes<LE>(buf);
 	}
 
-	void writeUInt32(const uint32_t val, vgm::OutputStream &out)
+	void writeUInt32(const uint32_t val, OutputStream &out)
 	{
 		unsigned char buf[4];
 		UInt32<>(val).toBytes<LE>(buf);
@@ -66,7 +58,7 @@ namespace
 	}
 
 	// TODO a more efficient implementation could be here
-	void setPos(vgm::InputStream &s, const size_t pos)
+	void setPos(InputStream &s, const size_t pos)
 	{
 		s.reset();
 		s.skip(pos);
