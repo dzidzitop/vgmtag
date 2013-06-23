@@ -24,19 +24,20 @@ using Tag = vgm::VGMFile::Tag;
 
 // TODO resolve it dynamically using argv[0]?
 const char * const programName = "vgmtag";
+const int getopt_tagStartValue = 1000;
 
 static const struct option options[] = {
-	{"title", required_argument, nullptr, 't'},
-	{"titleJP", required_argument, nullptr, 'T'},
-	{"game", required_argument, nullptr, 'g'},
-	{"gameJP", required_argument, nullptr, 'G'},
-	{"system", required_argument, nullptr, 's'},
-	{"systemJP", required_argument, nullptr, 'S'},
-	{"author", required_argument, nullptr, 'a'},
-	{"authorJP", required_argument, nullptr, 'A'},
-	{"date", required_argument, nullptr, 'd'},
-	{"converter", required_argument, nullptr, 'c'},
-	{"notes", required_argument, nullptr, 'n'},
+	{"title", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::title)},
+	{"titleJP", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::titleJP)},
+	{"game", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::game)},
+	{"gameJP", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::gameJP)},
+	{"system", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::system)},
+	{"systemJP", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::systemJP)},
+	{"author", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::author)},
+	{"authorJP", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::authorJP)},
+	{"date", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::date)},
+	{"converter", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::converter)},
+	{"notes", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::notes)},
 	{"help", no_argument, nullptr, 'h'},
 	{"version", no_argument, nullptr, 'v'},
 	{0}
@@ -158,60 +159,33 @@ try {
 	int c;
 	int optionIndex = -1;
 	while ((c = ::getopt_long(argc, argv, "h", options, &optionIndex)) != -1) {
-		switch (c) {
-		case 't':
-			tags.insert(P(Tag::title, stringToUTF16LE(::optarg)));
-			break;
-		case 'T':
-			tags.insert(P(Tag::titleJP, stringToUTF16LE(::optarg)));
-			break;
-		case 'g':
-			tags.insert(P(Tag::game, stringToUTF16LE(::optarg)));
-			break;
-		case 'G':
-			tags.insert(P(Tag::gameJP, stringToUTF16LE(::optarg)));
-			break;
-		case 's':
-			tags.insert(P(Tag::system, stringToUTF16LE(::optarg)));
-			break;
-		case 'S':
-			tags.insert(P(Tag::systemJP, stringToUTF16LE(::optarg)));
-			break;
-		case 'a':
-			tags.insert(P(Tag::author, stringToUTF16LE(::optarg)));
-			break;
-		case 'A':
-			tags.insert(P(Tag::authorJP, stringToUTF16LE(::optarg)));
-			break;
-		case 'd':
-			tags.insert(P(Tag::date, stringToUTF16LE(::optarg)));
-			break;
-		case 'c':
-			tags.insert(P(Tag::converter, stringToUTF16LE(::optarg)));
-			break;
-		case 'n':
-			// TODO think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags.insert(P(Tag::notes, stringToUTF16LE(::optarg)));
-			break;
-		case 'h':
-			printUsage(true);
-			return 0;
-		case 'v':
-			printVersion();
-			return 0;
-		case '?':
-			// getopt_long takes care of informing the user about the error option
-			printUsage(false);
-			return 1;
-		default:
-			cerr << "Unhandled option: ";
-			if (optionIndex == -1) {
-				cerr << '-' << static_cast<char>(c);
-			} else {
-				cerr << "--" << options[optionIndex].name;
+		if (c >= getopt_tagStartValue + static_cast<int>(Tag::title) &&
+				c <= getopt_tagStartValue + static_cast<int>(Tag::notes)) { // processing a tag argument
+			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
+			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
+			tags.insert(P(tag, stringToUTF16LE(::optarg)));
+		} else {
+			switch (c) {
+			case 'h':
+				printUsage(true);
+				return 0;
+			case 'v':
+				printVersion();
+				return 0;
+			case '?':
+				// getopt_long takes care of informing the user about the error option
+				printUsage(false);
+				return 1;
+			default:
+				cerr << "Unhandled option: ";
+				if (optionIndex == -1) {
+					cerr << '-' << static_cast<char>(c);
+				} else {
+					cerr << "--" << options[optionIndex].name;
+				}
+				cerr << endl;
+				return 1;
 			}
-			cerr << endl;
-			return 1;
 		}
 		optionIndex = -1;
 	}
