@@ -10,7 +10,6 @@
 
 #include "version.h"
 #include "vgm.h"
-#include "stream.h"
 
 #include <afc/Exception.h>
 #include <afc/File.h>
