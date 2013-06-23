@@ -5,7 +5,6 @@
 #include <locale>
 #include <string>
 #include <langinfo.h>
-#include <iconv.h>
 
 #include <getopt.h>
 
@@ -15,7 +14,7 @@
 #include <afc/Exception.h>
 #include <afc/File.h>
 #include <afc/math_utils.h>
-#include <afc/cpu/primitive.h>
+#include <afc/utils.h>
 
 using namespace std;
 using namespace afc;
@@ -108,45 +107,6 @@ void initLocaleContext()
 	charmap = nl_langinfo(CODESET);
 }
 
-const afc::endianness LE = afc::endianness::LE;
-
-inline u16string stringToUTF16LE(const string &src)
-{
-	if (src.empty()) {
-		return u16string();
-	}
-	iconv_t state = iconv_open("UTF-16LE", charmap);
-	char * srcBuf = const_cast<char *>(src.c_str()); // for some reason iconv takes non-const source buffer
-	size_t srcSize = src.size();
-	const size_t destSize = 4 * srcSize; // max length of a UTF16-LE character is 4 bytes
-	size_t destCharsLeft = destSize;
-	unique_ptr<char[]> destBuf(new char[destSize]);
-	char * mutableDestBuf = destBuf.get(); // iconv modifies the pointers to the buffers
-	const size_t count = iconv(state, &srcBuf, &srcSize, &mutableDestBuf, &destCharsLeft);
-	iconv_close(state); // TODO call this in a destructor. Create a wrapper for iconv
-	if (count == static_cast<size_t>(-1)) {
-		// TODO handle errors using errno
-		// The following errors can occur, among others:
-		// E2BIG There is not sufficient room at *outbuf.
-		// EILSEQ An invalid multibyte sequence has been encountered in the input.
-		// EINVAL An incomplete multibyte sequence has been encountered in the input.
-		throw MalformedFormatException("unsupported character sequence");
-	}
-	const size_t bufSize = destSize - destCharsLeft;
-	if (isOdd(bufSize)) {
-		throw MalformedFormatException("unsupported character sequence");
-	}
-
-	const char * const buf = destBuf.get();
-	u16string result;
-	result.reserve(bufSize/2);
-	for (size_t i = 0; i < bufSize; i+=2) {
-		const char16_t codePoint = UInt16<LE>::fromBytes<LE>(&buf[i]); // a UTF16-LE code point
-		result.push_back(codePoint);
-	}
-	return result;
-}
-
 typedef map<Tag, const u16string> M;
 typedef M::value_type P;
 
@@ -163,7 +123,7 @@ try {
 				c <= getopt_tagStartValue + static_cast<int>(Tag::notes)) { // processing a tag argument
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
 			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags.insert(P(tag, stringToUTF16LE(::optarg)));
+			tags.insert(P(tag, stringToUTF16LE(::optarg, charmap)));
 		} else {
 			switch (c) {
 			case 'h':

@@ -31,7 +31,7 @@ namespace
 		unsigned char buf[2];
 		for (;;) {
 			readBytes(buf, 2, src);
-			const char16_t c = UInt16<LE>::fromBytes<LE>(buf);
+			const char16_t c = UInt16<>::fromBytes<LE>(buf);
 			if (c == 0) {
 				break;
 			}
@@ -44,10 +44,10 @@ namespace
 	{
 		unsigned char buf[2];
 		for (size_t i = 0, n = src.size(); i < n; ++i) {
-			UInt16<LE>(src[i], LE).toBytes<LE>(buf);
+			UInt16<>(src[i]).toBytes<LE>(buf);
 			out.write(buf, 2);
 		}
-		UInt16<LE>(UInt16<LE>::type(0)).toBytes<LE>(buf);
+		UInt16<>(UInt16<>::type(0)).toBytes<LE>(buf);
 		out.write(buf, 2);
 	}
 
