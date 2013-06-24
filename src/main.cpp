@@ -68,6 +68,9 @@ Only the 'notes' tag can be multi-line.\n\
       --converter\tname of person who converted this track to a VGM file\n\
       --notes\t\tnotes to this track\n\
 \n\
+  -h, --help\t display this help and exit\n\
+      --version\t display version information and exit\n\
+\n\
 The system name should be written in a standard form (keeping spelling, spacing\n\
 and capitalisation the same). Here are some standard system names:\n\
 \n\
