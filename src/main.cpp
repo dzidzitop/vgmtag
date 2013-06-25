@@ -134,7 +134,6 @@ try {
 
 	M tags;
 
-	// TODO support force VMG/VGZ options
 	bool forceVGM = false;
 	bool forceVGZ = false;
 	int c;
