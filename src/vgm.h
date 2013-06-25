@@ -9,10 +9,15 @@ namespace vgm
 	class VGMFile
 	{
 	public:
+		enum class Format
+		{
+			vgm, vgz
+		};
+
 		~VGMFile() {delete[] m_data;}
 
 		static VGMFile load(const afc::File &src);
-		void save(const afc::File &dest, const bool compress = false);
+		void save(const afc::File &dest, const Format format);
 
 		/*
 		 * a) all tag values must be consecutive integers starting from 0
@@ -27,6 +32,8 @@ namespace vgm
 
 		void setTag(const Tag name, const std::u16string &value);
 		const std::u16string &getTag(const Tag name) const;
+
+		Format getFormat() const {return m_format;}
 	private:
 		VGMFile() : m_data(0), m_dataSize(0) {}
 
@@ -75,5 +82,6 @@ namespace vgm
 		GD3Info m_gd3Info;
 		unsigned char *m_data;
 		size_t m_dataSize;
+		Format m_format;
 	};
 }

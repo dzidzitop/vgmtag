@@ -142,14 +142,18 @@ void vgm::VGMFile::readData(InputStream &in)
 
 vgm::VGMFile vgm::VGMFile::load(const File &src)
 {
+	Format fmt;
 	auto_ptr<InputStream> inPtr;
 	// TODO use file headers to resolve the file format
 	if (endsWith(src.path(), ".vgz")) {
 		inPtr.reset(new GZipFileInputStream(src));
+		fmt = Format::vgz;
 	} else {
 		inPtr.reset(new FileInputStream(src));
+		fmt = Format::vgm;
 	}
 	VGMFile vgm;
+	vgm.m_format = fmt;
 	vgm.readHeader(*inPtr);
 	vgm.readData(*inPtr);
 	vgm.readGD3Info(*inPtr);
@@ -191,12 +195,12 @@ void vgm::VGMFile::writeGD3Info(OutputStream &out) const
 	}
 }
 
-void vgm::VGMFile::save(const File &dest, const bool compress)
+void vgm::VGMFile::save(const File &dest, const Format format)
 {
 	normalise();
 
 	auto_ptr<OutputStream> outPtr;
-	if (compress) {
+	if (format == Format::vgz) {
 		outPtr.reset(new GZipFileOutputStream(dest));
 	} else {
 		outPtr.reset(new FileOutputStream(dest));

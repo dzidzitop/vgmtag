@@ -20,6 +20,7 @@ using namespace std;
 using namespace afc;
 using namespace vgm;
 using Tag = vgm::VGMFile::Tag;
+using Format = vgm::VGMFile::Format;
 
 // TODO resolve it dynamically using argv[0]?
 const char * const programName = "vgmtag";
@@ -68,8 +69,17 @@ Only the 'notes' tag can be multi-line.\n\
       --converter\tname of person who converted this track to a VGM file\n\
       --notes\t\tnotes to this track\n\
 \n\
-  -h, --help\t display this help and exit\n\
-      --version\t display version information and exit\n\
+  -m  \t\tforce VMG output format. Cannot be used together with -z\n\
+  -z  \t\tforce VMZ (compressed) output format. Cannot be used\n\
+      \t\t  together with -m\n\
+  -h, --help\tdisplay this help and exit\n\
+      --version\tdisplay version information and exit\n\
+\n\
+If the output format is not specified then:\n\
+  1) DEST is defined:\n\
+    a) its extension is .vgz -> the VGZ format is used,\n\
+    b) the VGM format is used otherwise;\n\
+  2) DEST is undefined -> the format of SOURCE is preserved.\n\
 \n\
 The system name should be written in a standard form (keeping spelling, spacing\n\
 and capitalisation the same). Here are some standard system names:\n\
@@ -102,6 +112,11 @@ There is NO WARRANTY, to the extent permitted by law.\n\
 Written by D\x017Amitry La\x016D\x010Duk." << endl;
 }
 
+void printOutputFormatConflict()
+{
+	cerr << "Cannot force both VGM and VGZ output formats." << endl;
+}
+
 static const char * charmap;
 
 void initLocaleContext()
@@ -119,9 +134,12 @@ try {
 
 	M tags;
 
+	// TODO support force VMG/VGZ options
+	bool forceVGM = false;
+	bool forceVGZ = false;
 	int c;
 	int optionIndex = -1;
-	while ((c = ::getopt_long(argc, argv, "h", options, &optionIndex)) != -1) {
+	while ((c = ::getopt_long(argc, argv, "hmz", options, &optionIndex)) != -1) {
 		if (c >= getopt_tagStartValue + static_cast<int>(Tag::title) &&
 				c <= getopt_tagStartValue + static_cast<int>(Tag::notes)) { // processing a tag argument
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
@@ -135,6 +153,20 @@ try {
 			case 'v':
 				printVersion();
 				return 0;
+			case 'm':
+				if (forceVGZ) {
+					printOutputFormatConflict();
+					return 1;
+				}
+				forceVGM = true;
+				break;
+			case 'z':
+				if (forceVGM) {
+					printOutputFormatConflict();
+					return 1;
+				}
+				forceVGZ = true;
+				break;
 			case '?':
 				// getopt_long takes care of informing the user about the error option
 				printUsage(false);
@@ -164,14 +196,36 @@ try {
 	}
 
 	const File src(argv[optind]);
-	const File dest(optind < argc-1 ? argv[optind+1] : argv[optind]);
+
+	bool saveToSameFile;
+	const char *destFile;
+	if (optind < argc-1) { // there is DEST file
+		saveToSameFile = false;
+		destFile = argv[optind+1];
+	} else { // there is no DEST file
+		saveToSameFile = true;
+		destFile = argv[optind];
+	}
 
 	VGMFile vgmFile = VGMFile::load(src);
 	for (const P &entry : tags) {
 		vgmFile.setTag(entry.first, entry.second);
 	}
-	// TODO determine compress or not using either the dest file extension or the user-defined setting
-	vgmFile.save(dest, true);
+
+	Format outputFormat;
+	if (forceVGM) {
+		outputFormat = Format::vgm;
+	} else if (forceVGZ) {
+		outputFormat = Format::vgz;
+	} else if (saveToSameFile) {
+		outputFormat = vgmFile.getFormat();
+	} else if (endsWith(destFile, ".vgz")) {
+		outputFormat = Format::vgz;
+	} else {
+		outputFormat = Format::vgm;
+	}
+
+	vgmFile.save(File(destFile), outputFormat);
 
 	return 0;
 }
