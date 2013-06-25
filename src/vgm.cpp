@@ -11,18 +11,19 @@ namespace
 {
 	static const afc::endianness LE = afc::endianness::LE;
 
-	inline void readBytes(unsigned char buf[], const size_t n, InputStream &in)
+	inline void readBytes(unsigned char buf[], const size_t n, InputStream &in, size_t &cursor)
 	{
 		if (in.read(buf, n) != n) {
 			throw MalformedFormatException("Premature end of file");
 		}
+		cursor += n;
 	}
 
-	unsigned readTag(u16string &dest, InputStream &src)
+	unsigned readTag(u16string &dest, InputStream &src, size_t &cursor)
 	{
 		unsigned char buf[2];
 		for (;;) {
-			readBytes(buf, 2, src);
+			readBytes(buf, 2, src, cursor);
 			const char16_t c = UInt16<>::fromBytes<LE>(buf);
 			if (c == 0) {
 				break;
@@ -43,10 +44,10 @@ namespace
 		out.write(buf, 2);
 	}
 
-	uint32_t readUInt32(InputStream &in)
+	uint32_t readUInt32(InputStream &in, size_t &cursor)
 	{
 		unsigned char buf[4];
-		in.read(buf, 4);
+		readBytes(buf, 4, in, cursor);
 		return UInt32<>::fromBytes<LE>(buf);
 	}
 
@@ -57,71 +58,79 @@ namespace
 		out.write(buf, 4);
 	}
 
-	// TODO a more efficient implementation could be here
-	void setPos(InputStream &s, const size_t pos)
+	void setPos(InputStream &s, const size_t pos, size_t &cursor)
 	{
-		s.reset();
-		s.skip(pos);
+		if (cursor == pos) {
+			return;
+		}
+		if (cursor < pos) {
+			s.skip(pos - cursor);
+		} else {
+			// TODO a more efficient implementation could be here
+			s.reset();
+			s.skip(pos);
+		}
+		cursor = pos;
 	}
 }
 
-void vgm::VGMFile::readHeader(InputStream &in)
+void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 {
 	{ // VGM ID
-		m_header.id = readUInt32(in);
+		m_header.id = readUInt32(in, cursor);
 		if (m_header.id != VGMHeader::VGM_FILE_ID) {
 			throw MalformedFormatException("Not a VGM file");
 		}
 	}
-	m_header.eofOffset = readUInt32(in);
+	m_header.eofOffset = readUInt32(in, cursor);
 	{ // VGM version
-		m_header.version = readUInt32(in);
+		m_header.version = readUInt32(in, cursor);
 		if (m_header.version != VGMHeader::VGM_FILE_VERSION) {
 			throw UnsupportedFormatException("Unsupported VGM version");
 		}
 	}
-	m_header.snClock = readUInt32(in);
-	m_header.ym2413Clock = readUInt32(in);
-	m_header.gd3Offset = readUInt32(in);
-	m_header.sampleCount = readUInt32(in);
-	m_header.loopOffset = readUInt32(in);
-	m_header.loopSampleCount = readUInt32(in);
-	m_header.rate = readUInt32(in);
-	m_header.snFeedback = readUInt32(in);
-	m_header.ym2612Clock = readUInt32(in);
-	m_header.ym2151Clock = readUInt32(in);
-	m_header.vgmDataOffset = readUInt32(in);
+	m_header.snClock = readUInt32(in, cursor);
+	m_header.ym2413Clock = readUInt32(in, cursor);
+	m_header.gd3Offset = readUInt32(in, cursor);
+	m_header.sampleCount = readUInt32(in, cursor);
+	m_header.loopOffset = readUInt32(in, cursor);
+	m_header.loopSampleCount = readUInt32(in, cursor);
+	m_header.rate = readUInt32(in, cursor);
+	m_header.snFeedback = readUInt32(in, cursor);
+	m_header.ym2612Clock = readUInt32(in, cursor);
+	m_header.ym2151Clock = readUInt32(in, cursor);
+	m_header.vgmDataOffset = readUInt32(in, cursor);
 }
 
-void vgm::VGMFile::readGD3Info(InputStream &in)
+void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
 {
-	setPos(in, VGMHeader::POS_GD3 + m_header.gd3Offset);
+	setPos(in, VGMHeader::POS_GD3 + m_header.gd3Offset, cursor);
 
 	{ // VGM ID
-		const uint32_t vgmId = readUInt32(in);
+		const uint32_t vgmId = readUInt32(in, cursor);
 		if (vgmId != GD3Info::VGM_FILE_GD3_ID) {
 			throw MalformedFormatException("Not a VGM file");
 		}
 	}
 	{ // GD3 version
-		const uint32_t gd3Version = readUInt32(in);
+		const uint32_t gd3Version = readUInt32(in, cursor);
 		if (gd3Version != GD3Info::VGM_FILE_GD3_VERSION) {
 			throw UnsupportedFormatException("Unsupported GD3 version");
 		}
 	}
 
-	const uint32_t vgmGD3Length = readUInt32(in);
+	const uint32_t vgmGD3Length = readUInt32(in, cursor);
 	unsigned parsedCount = 0;
 	// reading tags
 	for (size_t i = static_cast<size_t>(Tag::title), n = static_cast<size_t>(Tag::notes); i <= n; ++i) {
-		parsedCount += readTag(m_gd3Info.tags[i], in);
+		parsedCount += readTag(m_gd3Info.tags[i], in, cursor);
 	}
 	if (parsedCount != vgmGD3Length) {
 		cerr << "skipping last " << vgmGD3Length - parsedCount << " unused bytes of the VGM GD3 header" << endl;
 	}
 }
 
-void vgm::VGMFile::readData(InputStream &in)
+void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
 {
 	const size_t absoluteDataOffset = m_header.vgmDataOffset + VGMHeader::POS_VGM_DATA;
 	const size_t absoluteEOFOffset = m_header.eofOffset + VGMHeader::POS_EOF;
@@ -135,9 +144,9 @@ void vgm::VGMFile::readData(InputStream &in)
 			m_dataSize = absoluteEOFOffset - absoluteDataOffset;
 		}
 	}
-	setPos(in, absoluteDataOffset);
+	setPos(in, absoluteDataOffset, cursor);
 	m_data = new unsigned char[m_dataSize];
-	in.read(m_data, m_dataSize);
+	readBytes(m_data, m_dataSize, in, cursor);
 }
 
 vgm::VGMFile vgm::VGMFile::load(const File &src)
@@ -152,11 +161,14 @@ vgm::VGMFile vgm::VGMFile::load(const File &src)
 		inPtr.reset(new FileInputStream(src));
 		fmt = Format::vgm;
 	}
+	// cursor is used to indicate the current position within the file. Knowing the current position allows setPos()
+	// to move cursor forward faster for stream input
+	size_t cursor = 0;
 	VGMFile vgm;
 	vgm.m_format = fmt;
-	vgm.readHeader(*inPtr);
-	vgm.readData(*inPtr);
-	vgm.readGD3Info(*inPtr);
+	vgm.readHeader(*inPtr, cursor);
+	vgm.readData(*inPtr, cursor);
+	vgm.readGD3Info(*inPtr, cursor);
 	return vgm;
 }
 

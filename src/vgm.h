@@ -3,6 +3,7 @@
 #include <afc/Exception.h>
 #include <stdint.h>
 #include <string>
+#include <cstddef>
 
 namespace vgm
 {
@@ -39,9 +40,9 @@ namespace vgm
 
 		void normalise();
 
-		void readHeader(afc::InputStream &in);
-		void readGD3Info(afc::InputStream &in);
-		void readData(afc::InputStream &in);
+		void readHeader(afc::InputStream &in, size_t &cursor);
+		void readGD3Info(afc::InputStream &in, size_t &cursor);
+		void readData(afc::InputStream &in, size_t &cursor);
 
 		void writeHeader(afc::OutputStream &out) const;
 		void writeGD3Info(afc::OutputStream &out) const;
