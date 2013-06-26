@@ -149,16 +149,17 @@ void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
 	readBytes(m_data, m_dataSize, in, cursor);
 }
 
+// TODO change const File &src to const char * const src
 vgm::VGMFile vgm::VGMFile::load(const File &src)
 {
 	Format fmt;
 	auto_ptr<InputStream> inPtr;
 	// TODO use file headers to resolve the file format
 	if (endsWith(src.path(), ".vgz")) {
-		inPtr.reset(new GZipFileInputStream(src));
+		inPtr.reset(new GZipFileInputStream(src.path().c_str()));
 		fmt = Format::vgz;
 	} else {
-		inPtr.reset(new FileInputStream(src));
+		inPtr.reset(new FileInputStream(src.path().c_str()));
 		fmt = Format::vgm;
 	}
 	// cursor is used to indicate the current position within the file. Knowing the current position allows setPos()
@@ -207,15 +208,16 @@ void vgm::VGMFile::writeGD3Info(OutputStream &out) const
 	}
 }
 
+// TODO change const File &dest to const char * const dest
 void vgm::VGMFile::save(const File &dest, const Format format)
 {
 	normalise();
 
 	auto_ptr<OutputStream> outPtr;
 	if (format == Format::vgz) {
-		outPtr.reset(new GZipFileOutputStream(dest));
+		outPtr.reset(new GZipFileOutputStream(dest.path().c_str()));
 	} else {
-		outPtr.reset(new FileOutputStream(dest));
+		outPtr.reset(new FileOutputStream(dest.path().c_str()));
 	}
 	writeHeader(*outPtr);
 	writeData(*outPtr);
