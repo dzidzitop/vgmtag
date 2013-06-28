@@ -12,7 +12,6 @@
 #include "vgm.h"
 
 #include <afc/Exception.h>
-#include <afc/File.h>
 #include <afc/math_utils.h>
 #include <afc/utils.h>
 
@@ -194,7 +193,7 @@ try {
 		return 1;
 	}
 
-	const File src(argv[optind]);
+	const char * const src(argv[optind]);
 
 	bool saveToSameFile;
 	const char *destFile;
@@ -224,7 +223,7 @@ try {
 		outputFormat = Format::vgm;
 	}
 
-	vgmFile.save(File(destFile), outputFormat);
+	vgmFile.save(destFile, outputFormat);
 
 	return 0;
 }

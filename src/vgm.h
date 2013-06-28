@@ -1,5 +1,4 @@
 #include <afc/stream.h>
-#include <afc/File.h>
 #include <afc/Exception.h>
 #include <stdint.h>
 #include <string>
@@ -17,8 +16,8 @@ namespace vgm
 
 		~VGMFile() {delete[] m_data;}
 
-		static VGMFile load(const afc::File &src);
-		void save(const afc::File &dest, const Format format);
+		static VGMFile load(const char * const src);
+		void save(const char * const dest, const Format format);
 
 		/*
 		 * a) all tag values must be consecutive integers starting from 0
