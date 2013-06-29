@@ -232,11 +232,11 @@ void vgm::VGMFile::save(const char * const dest, const Format format)
 
 void vgm::VGMFile::normalise()
 {
-	unsigned size = 0;
+	size_t tagCharCount = 0;
 	for (size_t i = static_cast<size_t>(Tag::title), n = static_cast<size_t>(Tag::notes); i <= n; ++i) {
-		size += m_gd3Info.tags[i].size() + 1; // '\0' must be counted too
+		tagCharCount += m_gd3Info.tags[i].size() + 1; // '\0' must be counted too
 	}
-	m_gd3Info.dataSize = size * 2; // UTF16-LE is used for GD3
+	m_gd3Info.dataSize = tagCharCount * 2; // UTF16-LE is used for GD3
 
 	m_header.vgmDataOffset = VGMHeader::HEADER_SIZE - VGMHeader::POS_VGM_DATA; // forcing the VGM data to start at absolute offset 0x40
 
