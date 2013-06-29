@@ -238,6 +238,7 @@ void vgm::VGMFile::normalise()
 	}
 	m_gd3Info.dataSize = tagCharCount * 2; // UTF16-LE is used for GD3
 
+	// TODO does this affect gd3Offset? If yes then gd3Offset must be normalised, too.
 	m_header.vgmDataOffset = VGMHeader::HEADER_SIZE - VGMHeader::POS_VGM_DATA; // forcing the VGM data to start at absolute offset 0x40
 
 	const size_t fileSize = VGMHeader::HEADER_SIZE + m_dataSize + GD3Info::HEADER_SIZE + m_gd3Info.dataSize;
