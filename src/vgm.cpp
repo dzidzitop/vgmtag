@@ -157,7 +157,10 @@ try
 		throw MalformedFormatException("Not a VGM/VGZ file"); // the file is too short to be either a VGM or VGZ file
 	}
 	if (buf[0] == 0x1f && buf[1] == 0x8b) { // a VGZ (GZip) file. GZip file magic header is {0x1f, 0x8b}
-		inPtr.reset(nullptr); // ensures that the file is not opened twice at the same time
+		/* Ensure that the file is not opened twice at the same time.
+		   In addition, exceptions while closing could be caught by the caller,
+		   which is not the case with destructors. */
+		inPtr->close();
 		inPtr.reset(new GZipFileInputStream(srcFile));
 		m_format = Format::vgz;
 	} else if (UInt32<>::fromBytes<LE>(buf) == VGMHeader::VGM_FILE_ID) { // a GVM file
@@ -171,6 +174,8 @@ try
 	readHeader(*inPtr, cursor);
 	readData(*inPtr, cursor);
 	readGD3Info(*inPtr, cursor);
+
+	inPtr->close(); // if close generates an exception it is not suppressed, as destructors must do.
 }
 catch (...) {
 	delete[] m_data;
@@ -216,9 +221,11 @@ void vgm::VGMFile::save(const char * const dest, const Format format)
 	if (format == Format::vgz) {
 		GZipFileOutputStream out(dest);
 		writeContent(out);
+		out.close(); // if close generates an exception it is not suppressed, as destructors must do.
 	} else {
 		FileOutputStream out(dest);
 		writeContent(out);
+		out.close(); // if close generates an exception it is not suppressed, as destructors must do.
 	}
 
 }
