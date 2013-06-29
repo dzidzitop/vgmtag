@@ -156,7 +156,7 @@ vgm::VGMFile vgm::VGMFile::load(const char * const src)
 	}
 	Format fmt;
 	if (buf[0] == 0x1f && buf[1] == 0x8b) { // a VGZ (GZip) file. GZip file magic header is {0x1f, 0x8b}
-		inPtr.release(); // ensures that the file is not opened twice at the same time
+		inPtr.reset(nullptr); // ensures that the file is not opened twice at the same time
 		inPtr.reset(new GZipFileInputStream(src));
 		fmt = Format::vgz;
 	} else if (UInt32<>::fromBytes<LE>(buf) == VGMHeader::VGM_FILE_ID) { // a GVM file
