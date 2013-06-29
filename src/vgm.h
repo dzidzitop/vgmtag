@@ -1,6 +1,6 @@
 #include <afc/stream.h>
 #include <afc/Exception.h>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <cstddef>
 
