@@ -79,7 +79,7 @@ void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 	{ // VGM ID
 		m_header.id = readUInt32(in, cursor);
 		if (m_header.id != VGMHeader::VGM_FILE_ID) {
-			throw MalformedFormatException("Not a VGM file");
+			throw MalformedFormatException("Not a VGM/VGZ file");
 		}
 	}
 	m_header.eofOffset = readUInt32(in, cursor);
@@ -151,14 +151,18 @@ void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
 
 vgm::VGMFile vgm::VGMFile::load(const char * const src)
 {
+	unique_ptr<InputStream> inPtr(new FileInputStream(src));
+	unsigned char buf[4];
+	if (inPtr->read(buf, 4) != 4) {
+		throw MalformedFormatException("Not a VGM/VGZ file"); // the file is too short to be either a VGM or VGZ file
+	}
 	Format fmt;
-	auto_ptr<InputStream> inPtr;
-	// TODO use file headers to resolve the file format
-	if (endsWith(src, ".vgz")) {
+	if (buf[0] == 0x1f && buf[1] == 0x8b) { // a VGZ (GZip) file. GZip file magic header is {0x1f, 0x8b}
+		inPtr.release(); // ensures that the file is not opened twice at the same time
 		inPtr.reset(new GZipFileInputStream(src));
 		fmt = Format::vgz;
-	} else {
-		inPtr.reset(new FileInputStream(src));
+	} else if (UInt32<>::fromBytes<LE>(buf) == VGMHeader::VGM_FILE_ID) { // a GVM file
+		inPtr->reset();
 		fmt = Format::vgm;
 	}
 	// cursor is used to indicate the current position within the file. Knowing the current position allows setPos()
