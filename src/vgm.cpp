@@ -1,7 +1,5 @@
 #include "vgm.h"
 #include <afc/cpu/primitive.h>
-#include <afc/utils.h>
-#include <climits>
 #include <memory>
 
 using namespace afc;
