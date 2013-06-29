@@ -14,9 +14,9 @@ namespace vgm
 			vgm, vgz
 		};
 
+		VGMFile(const char * const srcFile);
 		~VGMFile() {delete[] m_data;}
 
-		static VGMFile load(const char * const src);
 		void save(const char * const dest, const Format format);
 
 		/*
@@ -35,7 +35,8 @@ namespace vgm
 
 		Format getFormat() const {return m_format;}
 	private:
-		VGMFile() : m_data(0), m_dataSize(0) {}
+		VGMFile(const VGMFile &);
+		VGMFile &operator=(const VGMFile &);
 
 		void normalise();
 

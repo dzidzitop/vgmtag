@@ -205,7 +205,7 @@ try {
 		destFile = argv[optind];
 	}
 
-	VGMFile vgmFile = VGMFile::load(src);
+	VGMFile vgmFile(src);
 	for (const P &entry : tags) {
 		vgmFile.setTag(entry.first, entry.second);
 	}

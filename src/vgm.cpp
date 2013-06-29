@@ -147,31 +147,34 @@ void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
 	readBytes(m_data, m_dataSize, in, cursor);
 }
 
-vgm::VGMFile vgm::VGMFile::load(const char * const src)
+vgm::VGMFile::VGMFile(const char * const srcFile)
+try
+	: m_data(0), m_dataSize(0)
 {
-	unique_ptr<InputStream> inPtr(new FileInputStream(src));
+	unique_ptr<InputStream> inPtr(new FileInputStream(srcFile));
 	unsigned char buf[4];
 	if (inPtr->read(buf, 4) != 4) {
 		throw MalformedFormatException("Not a VGM/VGZ file"); // the file is too short to be either a VGM or VGZ file
 	}
-	Format fmt;
 	if (buf[0] == 0x1f && buf[1] == 0x8b) { // a VGZ (GZip) file. GZip file magic header is {0x1f, 0x8b}
 		inPtr.reset(nullptr); // ensures that the file is not opened twice at the same time
-		inPtr.reset(new GZipFileInputStream(src));
-		fmt = Format::vgz;
+		inPtr.reset(new GZipFileInputStream(srcFile));
+		m_format = Format::vgz;
 	} else if (UInt32<>::fromBytes<LE>(buf) == VGMHeader::VGM_FILE_ID) { // a GVM file
 		inPtr->reset();
-		fmt = Format::vgm;
+		m_format = Format::vgm;
 	}
+
 	// cursor is used to indicate the current position within the file. Knowing the current position allows setPos()
 	// to move cursor forward faster for stream input
 	size_t cursor = 0;
-	VGMFile vgm;
-	vgm.m_format = fmt;
-	vgm.readHeader(*inPtr, cursor);
-	vgm.readData(*inPtr, cursor);
-	vgm.readGD3Info(*inPtr, cursor);
-	return vgm;
+	readHeader(*inPtr, cursor);
+	readData(*inPtr, cursor);
+	readGD3Info(*inPtr, cursor);
+}
+catch (...) {
+	delete[] m_data;
+	throw;
 }
 
 void vgm::VGMFile::writeHeader(OutputStream &out) const
