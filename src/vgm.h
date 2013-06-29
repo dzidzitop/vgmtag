@@ -44,9 +44,7 @@ namespace vgm
 		void readGD3Info(afc::InputStream &in, size_t &cursor);
 		void readData(afc::InputStream &in, size_t &cursor);
 
-		void writeHeader(afc::OutputStream &out) const;
-		void writeGD3Info(afc::OutputStream &out) const;
-		void writeData(afc::OutputStream &out) const;
+		void writeContent(afc::OutputStream &out) const;
 
 		struct VGMHeader
 		{

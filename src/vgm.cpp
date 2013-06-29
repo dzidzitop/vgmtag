@@ -177,8 +177,9 @@ catch (...) {
 	throw;
 }
 
-void vgm::VGMFile::writeHeader(OutputStream &out) const
+void vgm::VGMFile::writeContent(OutputStream &out) const
 {
+	// write header
 	writeUInt32(m_header.id, out);
 	writeUInt32(m_header.eofOffset, out);
 	writeUInt32(m_header.version, out);
@@ -195,15 +196,11 @@ void vgm::VGMFile::writeHeader(OutputStream &out) const
 	writeUInt32(m_header.vgmDataOffset, out);
 	writeUInt32(0, out); // reserved
 	writeUInt32(0, out); // reserved
-}
 
-void vgm::VGMFile::writeData(OutputStream &out) const
-{
+	// write data
 	out.write(m_data, m_dataSize);
-}
 
-void vgm::VGMFile::writeGD3Info(OutputStream &out) const
-{
+	// write GD3 info
 	writeUInt32(GD3Info::VGM_FILE_GD3_ID, out);
 	writeUInt32(GD3Info::VGM_FILE_GD3_VERSION, out);
 	writeUInt32(m_gd3Info.dataSize, out);
@@ -216,15 +213,14 @@ void vgm::VGMFile::save(const char * const dest, const Format format)
 {
 	normalise();
 
-	auto_ptr<OutputStream> outPtr;
 	if (format == Format::vgz) {
-		outPtr.reset(new GZipFileOutputStream(dest));
+		GZipFileOutputStream out(dest);
+		writeContent(out);
 	} else {
-		outPtr.reset(new FileOutputStream(dest));
+		FileOutputStream out(dest);
+		writeContent(out);
 	}
-	writeHeader(*outPtr);
-	writeData(*outPtr);
-	writeGD3Info(*outPtr);
+
 }
 
 void vgm::VGMFile::normalise()
