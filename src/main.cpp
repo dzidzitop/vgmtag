@@ -21,6 +21,7 @@ using namespace vgm;
 using Tag = vgm::VGMFile::Tag;
 using Format = vgm::VGMFile::Format;
 
+namespace {
 // TODO resolve it dynamically using argv[0]?
 const char * const programName = "vgmtag";
 const int getopt_tagStartValue = 1000;
@@ -39,6 +40,7 @@ static const struct option options[] = {
 	{"notes", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::notes)},
 	{"help", no_argument, nullptr, 'h'},
 	{"version", no_argument, nullptr, 'v'},
+	{"info", no_argument, nullptr, 'i'},
 	{0}
 };
 
@@ -71,6 +73,7 @@ Only the 'notes' tag can be multi-line.\n\
   -m  \t\tforce VMG output format. Cannot be used together with -z\n\
   -z  \t\tforce VMZ (compressed) output format. Cannot be used\n\
       \t\t  together with -m\n\
+      --info\tdisplay file format and GD3 info and exit\n\
   -h, --help\tdisplay this help and exit\n\
       --version\tdisplay version information and exit\n\
 \n\
@@ -116,6 +119,23 @@ void printOutputFormatConflict()
 	cerr << "Cannot force both VGM and VGZ output formats." << endl;
 }
 
+void printInfo(const VGMFile &vgmFile, const char * const outputEncoding)
+{
+	cout << "File format:\t\t" << (vgmFile.getFormat() == Format::vgm ? "VGM" : "VGZ") << '\n';
+	cout << "--------\n";
+	cout << "Title (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::title), outputEncoding) << '\n';
+	cout << "Title (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::titleJP), outputEncoding) << '\n';
+	cout << "Game (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::game), outputEncoding) << '\n';
+	cout << "Game (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::gameJP), outputEncoding) << '\n';
+	cout << "System (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::system), outputEncoding) << '\n';
+	cout << "System (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::systemJP), outputEncoding) << '\n';
+	cout << "Author (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::author), outputEncoding) << '\n';
+	cout << "Author (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::authorJP), outputEncoding) << '\n';
+	cout << "Date:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::date), outputEncoding) << '\n';
+	cout << "Converter:\t\t" << utf16leToString(vgmFile.getTag(Tag::converter), outputEncoding) << '\n';
+	cout << "Notes:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::notes), outputEncoding) << endl;
+}
+
 static const char * charmap;
 
 void initLocaleContext()
@@ -126,6 +146,7 @@ void initLocaleContext()
 
 typedef map<Tag, const u16string> M;
 typedef M::value_type P;
+}
 
 int main(const int argc, char * argv[])
 try {
@@ -133,18 +154,24 @@ try {
 
 	M tags;
 
+	bool nonInfoSpecified = false;
 	bool forceVGM = false;
 	bool forceVGZ = false;
+	bool showInfo = false;
 	int c;
 	int optionIndex = -1;
 	while ((c = ::getopt_long(argc, argv, "hmz", options, &optionIndex)) != -1) {
 		if (c >= getopt_tagStartValue + static_cast<int>(Tag::title) &&
 				c <= getopt_tagStartValue + static_cast<int>(Tag::notes)) { // processing a tag argument
+			nonInfoSpecified = true;
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
 			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
 			tags.insert(P(tag, stringToUTF16LE(::optarg, charmap)));
 		} else {
 			switch (c) {
+			case 'i':
+				showInfo = true;
+				break;
 			case 'h':
 				printUsage(true);
 				return 0;
@@ -152,6 +179,7 @@ try {
 				printVersion();
 				return 0;
 			case 'm':
+				nonInfoSpecified = true;
 				if (forceVGZ) {
 					printOutputFormatConflict();
 					return 1;
@@ -159,6 +187,7 @@ try {
 				forceVGM = true;
 				break;
 			case 'z':
+				nonInfoSpecified = true;
 				if (forceVGM) {
 					printOutputFormatConflict();
 					return 1;
@@ -198,11 +227,25 @@ try {
 	bool saveToSameFile;
 	const char *destFile;
 	if (optind < argc-1) { // there is DEST file
+		if (showInfo) {
+			cerr << "Only SOURCE can be specified with --info." << endl;
+			return 1;
+		}
 		saveToSameFile = false;
 		destFile = argv[optind+1];
 	} else { // there is no DEST file
 		saveToSameFile = true;
 		destFile = argv[optind];
+	}
+
+	if (showInfo) {
+		if (nonInfoSpecified) {
+			cerr << "No other options can be specified with --info." << endl;
+			return 1;
+		}
+		// TODO load only GD3 in the --info mode
+		printInfo(VGMFile(src), charmap);
+		return 0;
 	}
 
 	VGMFile vgmFile(src);

@@ -4,7 +4,7 @@
 namespace vgm
 {
 	const char * const PROGRAM_NAME = "vgmtag";
-	const char * const PROGRAM_VERSION = "0.1.1";
+	const char * const PROGRAM_VERSION = "0.2.0";
 }
 
 #endif /* VGM_VERSION_H_ */
