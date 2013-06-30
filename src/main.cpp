@@ -41,6 +41,7 @@ static const struct option options[] = {
 	{"help", no_argument, nullptr, 'h'},
 	{"version", no_argument, nullptr, 'v'},
 	{"info", no_argument, nullptr, 'i'},
+	{"info-failsafe", no_argument, nullptr, 's'},
 	{0}
 };
 
@@ -70,12 +71,14 @@ Only the 'notes' tag can be multi-line.\n\
       --converter\tname of person who converted this track to a VGM file\n\
       --notes\t\tnotes to this track\n\
 \n\
-  -m  \t\tforce VMG output format. Cannot be used together with -z\n\
-  -z  \t\tforce VMZ (compressed) output format. Cannot be used\n\
-      \t\t  together with -m\n\
-      --info\tdisplay SOURCE file format and GD3 info and exit\n\
-  -h, --help\tdisplay this help and exit\n\
-      --version\tdisplay version information and exit\n\
+  -m  \t\t\tforce VMG output format. Cannot be used together with -z\n\
+  -z  \t\t\tforce VMZ (compressed) output format. Cannot be used\n\
+      \t\t\t  together with -m\n\
+      --info\t\tdisplay SOURCE file format and GD3 info and exit\n\
+      --info-failsafe\tdisplay SOURCE file format and GD3 info (transliterating\n\
+      \t\t\t  unmappable characters, if needed) and exit\n\
+  -h, --help\t\tdisplay this help and exit\n\
+      --version\t\tdisplay version information and exit\n\
 \n\
 If the output format is not specified then:\n\
   1) DEST is defined:\n\
@@ -119,21 +122,25 @@ void printOutputFormatConflict()
 	cerr << "Cannot force both VGM and VGZ output formats." << endl;
 }
 
-void printInfo(const VGMFile &vgmFile, const char * const outputEncoding)
+void printInfo(const VGMFile &vgmFile, const char * const outputEncoding, const bool failSafeInfo)
 {
+	string encoding(outputEncoding);
+	if (failSafeInfo) {
+		encoding += "//TRANSLIT";
+	}
 	cout << "File format:\t\t" << (vgmFile.getFormat() == Format::vgm ? "VGM" : "VGZ") << '\n';
 	cout << "--------\n";
-	cout << "Title (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::title), outputEncoding) << '\n';
-	cout << "Title (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::titleJP), outputEncoding) << '\n';
-	cout << "Game (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::game), outputEncoding) << '\n';
-	cout << "Game (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::gameJP), outputEncoding) << '\n';
-	cout << "System (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::system), outputEncoding) << '\n';
-	cout << "System (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::systemJP), outputEncoding) << '\n';
-	cout << "Author (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::author), outputEncoding) << '\n';
-	cout << "Author (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::authorJP), outputEncoding) << '\n';
-	cout << "Date:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::date), outputEncoding) << '\n';
-	cout << "Converter:\t\t" << utf16leToString(vgmFile.getTag(Tag::converter), outputEncoding) << '\n';
-	cout << "Notes:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::notes), outputEncoding) << endl;
+	cout << "Title (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::title), encoding.c_str()) << '\n';
+	cout << "Title (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::titleJP), encoding.c_str()) << '\n';
+	cout << "Game (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::game), encoding.c_str()) << '\n';
+	cout << "Game (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::gameJP), encoding.c_str()) << '\n';
+	cout << "System (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::system), encoding.c_str()) << '\n';
+	cout << "System (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::systemJP), encoding.c_str()) << '\n';
+	cout << "Author (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::author), encoding.c_str()) << '\n';
+	cout << "Author (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::authorJP), encoding.c_str()) << '\n';
+	cout << "Date:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::date), encoding.c_str()) << '\n';
+	cout << "Converter:\t\t" << utf16leToString(vgmFile.getTag(Tag::converter), encoding.c_str()) << '\n';
+	cout << "Notes:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::notes), encoding.c_str()) << endl;
 }
 
 static const char * charmap;
@@ -158,6 +165,7 @@ try {
 	bool forceVGM = false;
 	bool forceVGZ = false;
 	bool showInfo = false;
+	bool failSafeInfo = false;
 	int c;
 	int optionIndex = -1;
 	while ((c = ::getopt_long(argc, argv, "hmz", options, &optionIndex)) != -1) {
@@ -171,6 +179,10 @@ try {
 			switch (c) {
 			case 'i':
 				showInfo = true;
+				break;
+			case 's':
+				showInfo = true;
+				failSafeInfo = true;
 				break;
 			case 'h':
 				printUsage(true);
@@ -228,7 +240,7 @@ try {
 	const char *destFile;
 	if (optind < argc-1) { // there is DEST file
 		if (showInfo) {
-			cerr << "Only SOURCE can be specified with --info." << endl;
+			cerr << "Only SOURCE can be specified with --info or --info-failsafe." << endl;
 			return 1;
 		}
 		saveToSameFile = false;
@@ -240,11 +252,11 @@ try {
 
 	if (showInfo) {
 		if (nonInfoSpecified) {
-			cerr << "No other options can be specified with --info." << endl;
+			cerr << "No other options can be specified with --info or --info-failsafe." << endl;
 			return 1;
 		}
 		// TODO load only GD3 in the --info mode
-		printInfo(VGMFile(src), charmap);
+		printInfo(VGMFile(src), charmap, failSafeInfo);
 		return 0;
 	}
 
