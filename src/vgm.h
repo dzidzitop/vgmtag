@@ -35,8 +35,8 @@ namespace vgm
 
 		Format getFormat() const {return m_format;}
 	private:
-		VGMFile(const VGMFile &);
-		VGMFile &operator=(const VGMFile &);
+		VGMFile(const VGMFile &) = delete;
+		VGMFile &operator=(const VGMFile &) = delete;
 
 		void normalise();
 
