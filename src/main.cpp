@@ -73,7 +73,7 @@ Only the 'notes' tag can be multi-line.\n\
   -m  \t\tforce VMG output format. Cannot be used together with -z\n\
   -z  \t\tforce VMZ (compressed) output format. Cannot be used\n\
       \t\t  together with -m\n\
-      --info\tdisplay file format and GD3 info and exit\n\
+      --info\tdisplay SOURCE file format and GD3 info and exit\n\
   -h, --help\tdisplay this help and exit\n\
       --version\tdisplay version information and exit\n\
 \n\
