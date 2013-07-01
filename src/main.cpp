@@ -25,6 +25,7 @@ namespace {
 // TODO resolve it dynamically using argv[0]?
 const char * const programName = "vgmtag";
 const int getopt_tagStartValue = 1000;
+static const char * systemEncoding;
 
 static const struct option options[] = {
 	{"title", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::title)},
@@ -122,33 +123,43 @@ void printOutputFormatConflict()
 	cerr << "Cannot force both VGM and VGZ output formats." << endl;
 }
 
-void printInfo(const VGMFile &vgmFile, const char * const outputEncoding, const bool failSafeInfo)
+void printInfo(const VGMFile &vgmFile, const bool failSafeInfo)
 {
-	string encoding(outputEncoding);
+	string encoding(systemEncoding);
 	if (failSafeInfo) {
 		encoding += "//TRANSLIT";
 	}
+	const string title(utf16leToString(vgmFile.getTag(Tag::title), encoding.c_str()));
+	const string titleJP(utf16leToString(vgmFile.getTag(Tag::titleJP), encoding.c_str()));
+	const string game(utf16leToString(vgmFile.getTag(Tag::game), encoding.c_str()));
+	const string gameJP(utf16leToString(vgmFile.getTag(Tag::gameJP), encoding.c_str()));
+	const string system(utf16leToString(vgmFile.getTag(Tag::system), encoding.c_str()));
+	const string systemJP(utf16leToString(vgmFile.getTag(Tag::systemJP), encoding.c_str()));
+	const string author(utf16leToString(vgmFile.getTag(Tag::author), encoding.c_str()));
+	const string authorJP(utf16leToString(vgmFile.getTag(Tag::authorJP), encoding.c_str()));
+	const string date(utf16leToString(vgmFile.getTag(Tag::date), encoding.c_str()));
+	const string converter(utf16leToString(vgmFile.getTag(Tag::converter), encoding.c_str()));
+	const string notes(utf16leToString(vgmFile.getTag(Tag::notes), encoding.c_str()));
+
 	cout << "File format:\t\t" << (vgmFile.getFormat() == Format::vgm ? "VGM" : "VGZ") << '\n';
 	cout << "--------\n";
-	cout << "Title (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::title), encoding.c_str()) << '\n';
-	cout << "Title (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::titleJP), encoding.c_str()) << '\n';
-	cout << "Game (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::game), encoding.c_str()) << '\n';
-	cout << "Game (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::gameJP), encoding.c_str()) << '\n';
-	cout << "System (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::system), encoding.c_str()) << '\n';
-	cout << "System (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::systemJP), encoding.c_str()) << '\n';
-	cout << "Author (Latin):\t\t" << utf16leToString(vgmFile.getTag(Tag::author), encoding.c_str()) << '\n';
-	cout << "Author (Japanese):\t" << utf16leToString(vgmFile.getTag(Tag::authorJP), encoding.c_str()) << '\n';
-	cout << "Date:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::date), encoding.c_str()) << '\n';
-	cout << "Converter:\t\t" << utf16leToString(vgmFile.getTag(Tag::converter), encoding.c_str()) << '\n';
-	cout << "Notes:\t\t\t" << utf16leToString(vgmFile.getTag(Tag::notes), encoding.c_str()) << endl;
+	cout << "Title (Latin):\t\t" << title << '\n';
+	cout << "Title (Japanese):\t" << titleJP << '\n';
+	cout << "Game (Latin):\t\t" << game << '\n';
+	cout << "Game (Japanese):\t" << gameJP << '\n';
+	cout << "System (Latin):\t\t" << system << '\n';
+	cout << "System (Japanese):\t" << systemJP << '\n';
+	cout << "Author (Latin):\t\t" << author << '\n';
+	cout << "Author (Japanese):\t" << authorJP << '\n';
+	cout << "Date:\t\t\t" << date << '\n';
+	cout << "Converter:\t\t" << converter << '\n';
+	cout << "Notes:\t\t\t" << notes << endl;
 }
-
-static const char * charmap;
 
 void initLocaleContext()
 {
 	locale::global(locale(""));
-	charmap = nl_langinfo(CODESET);
+	systemEncoding = nl_langinfo(CODESET);
 }
 
 typedef map<Tag, const u16string> M;
@@ -174,7 +185,7 @@ try {
 			nonInfoSpecified = true;
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
 			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags.insert(P(tag, stringToUTF16LE(::optarg, charmap)));
+			tags.insert(P(tag, stringToUTF16LE(::optarg, systemEncoding)));
 		} else {
 			switch (c) {
 			case 'i':
@@ -255,8 +266,15 @@ try {
 			cerr << "No other options can be specified with --info or --info-failsafe." << endl;
 			return 1;
 		}
-		// TODO load only GD3 in the --info mode
-		printInfo(VGMFile(src), charmap, failSafeInfo);
+		try {
+			// TODO load only GD3 in the --info mode
+			printInfo(VGMFile(src), failSafeInfo);
+		}
+		catch (MalformedFormatException &ex) {
+			cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" << systemEncoding <<
+					"). Try to run the program with the --info-failsafe option." << endl;
+			return 1;
+		}
 		return 0;
 	}
 
