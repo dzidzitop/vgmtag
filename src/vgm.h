@@ -1,4 +1,4 @@
-/* vgmtag - a command-line tag editor of the GVM/VGZ media files.
+/* vgmtag - a command-line tag editor of VGM/VGZ media files.
 Copyright (C) 2013 Dzmitry Liauchuk
 
 This program is free software: you can redistribute it and/or modify
