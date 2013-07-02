@@ -322,10 +322,12 @@ try {
 
 	return 0;
 }
+#ifdef VGM_DEBUG
 catch (Exception &ex) {
 	ex.printStackTrace(cerr);
 	return 1;
 }
+#endif
 catch (exception &ex) {
 	cerr << ex.what() << endl;
 	return 1;
