@@ -40,7 +40,7 @@ namespace {
 // TODO resolve it dynamically using argv[0]?
 const char * const programName = "vgmtag";
 const int getopt_tagStartValue = 1000;
-static const char * systemEncoding;
+static const char *systemEncoding;
 
 static const struct option options[] = {
 	{"title", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::title)},
@@ -300,9 +300,18 @@ try {
 		return 0;
 	}
 
-	VGMFile vgmFile(src);
+	unique_ptr<VGMFile> vgmFile;
+
+	try {
+		vgmFile.reset(new VGMFile(src));
+	}
+	catch (IOException &ex) {
+		cerr << "Unable to load VGM/VGZ data from '" << src << "':\n  " << ex.what() << endl;
+		return 1;
+	}
+
 	for (const P &entry : tags) {
-		vgmFile.setTag(entry.first, entry.second);
+		vgmFile->setTag(entry.first, entry.second);
 	}
 
 	Format outputFormat;
@@ -311,14 +320,20 @@ try {
 	} else if (forceVGZ) {
 		outputFormat = Format::vgz;
 	} else if (saveToSameFile) {
-		outputFormat = vgmFile.getFormat();
+		outputFormat = vgmFile->getFormat();
 	} else if (endsWith(destFile, ".vgz")) {
 		outputFormat = Format::vgz;
 	} else {
 		outputFormat = Format::vgm;
 	}
 
-	vgmFile.save(destFile, outputFormat);
+	try {
+		vgmFile->save(destFile, outputFormat);
+	}
+	catch (IOException &ex) {
+		cerr << "Unable to save VGM/VGZ data to '" << destFile << "':\n  " << ex.what() << endl;
+		return 1;
+	}
 
 	return 0;
 }
