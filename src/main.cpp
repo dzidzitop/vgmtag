@@ -184,6 +184,21 @@ void initLocaleContext()
 	systemEncoding = nl_langinfo(CODESET);
 }
 
+struct UnableToLoadVGMFile : public Exception
+{
+	UnableToLoadVGMFile(const string &what, Exception * const cause) : Exception(what, cause) {}
+};
+
+unique_ptr<VGMFile> loadFile(const char * const src)
+{
+	try {
+		return unique_ptr<VGMFile>(new VGMFile(src));
+	}
+	catch (IOException &ex) {
+		throw UnableToLoadVGMFile(string("Unable to load VGM/VGZ data from '") + src + "':\n  " + ex.what(), &ex);
+	}
+}
+
 typedef map<Tag, const u16string> M;
 typedef M::value_type P;
 }
@@ -290,7 +305,8 @@ try {
 		}
 		try {
 			// TODO load only GD3 in the --info mode
-			printInfo(VGMFile(src), failSafeInfo);
+			const unique_ptr<VGMFile> vgmFilePtr = loadFile(src);
+			printInfo(*vgmFilePtr, failSafeInfo);
 		}
 		catch (MalformedFormatException &ex) {
 			cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" << systemEncoding <<
@@ -300,15 +316,7 @@ try {
 		return 0;
 	}
 
-	unique_ptr<VGMFile> vgmFile;
-
-	try {
-		vgmFile.reset(new VGMFile(src));
-	}
-	catch (IOException &ex) {
-		cerr << "Unable to load VGM/VGZ data from '" << src << "':\n  " << ex.what() << endl;
-		return 1;
-	}
+	const unique_ptr<VGMFile> vgmFile = loadFile(src);
 
 	for (const P &entry : tags) {
 		vgmFile->setTag(entry.first, entry.second);
