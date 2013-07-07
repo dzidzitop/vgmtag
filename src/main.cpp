@@ -303,9 +303,9 @@ try {
 			cerr << "No other options can be specified with --info or --info-failsafe." << endl;
 			return 1;
 		}
+		// TODO load only GD3 in the --info mode
+		const unique_ptr<VGMFile> vgmFilePtr = loadFile(src);
 		try {
-			// TODO load only GD3 in the --info mode
-			const unique_ptr<VGMFile> vgmFilePtr = loadFile(src);
 			printInfo(*vgmFilePtr, failSafeInfo);
 		}
 		catch (MalformedFormatException &ex) {
