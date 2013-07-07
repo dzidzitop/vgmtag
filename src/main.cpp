@@ -194,8 +194,8 @@ unique_ptr<VGMFile> loadFile(const char * const src)
 	try {
 		return unique_ptr<VGMFile>(new VGMFile(src));
 	}
-	catch (IOException &ex) {
-		throw UnableToLoadVGMFile(string("Unable to load VGM/VGZ data from '") + src + "':\n  " + ex.what(), &ex);
+	catch (Exception &ex) {
+		throw UnableToLoadVGMFile(string("Unable to load VGM/VGZ data from '") + src + "': " + ex.what(), &ex);
 	}
 }
 
