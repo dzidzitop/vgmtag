@@ -70,6 +70,7 @@ namespace vgm
 			/* Despite of the platform endianness these values are stored in files in the little-endian format and
 			   are converted into the platform format while parsing the file. */
 			static const uint32_t VGM_FILE_ID = 0x206d6756; // 'Vgm ' as 4 bytes casted to little-endian int32
+			// TODO support all VGM versions up to v1.61
 			static const uint32_t VGM_FILE_VERSION = 0x00000150;
 
 			static const uint32_t HEADER_SIZE = 0x40;
