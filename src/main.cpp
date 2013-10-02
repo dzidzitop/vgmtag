@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <memory>
 #include <locale>
 #include <string>
-#include <langinfo.h>
 
 #include <getopt.h>
 
@@ -40,7 +39,7 @@ namespace {
 // TODO resolve it dynamically using argv[0]?
 const char * const programName = "vgmtag";
 const int getopt_tagStartValue = 1000;
-static const char *systemEncoding;
+static string systemEncoding;
 
 static const struct option options[] = {
 	{"title", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::title)},
@@ -126,7 +125,7 @@ void printVersion()
 {
 	string author;
 	try {
-		author = utf16leToString(u"D\u017Amitry La\u016D\u010Duk", systemEncoding);
+		author = utf16leToString(u"D\u017Amitry La\u016D\u010Duk", systemEncoding.c_str());
 	}
 	catch (MalformedFormatException &ex) {
 		author = "Dzmitry Liauchuk";
@@ -181,7 +180,7 @@ void printInfo(const VGMFile &vgmFile, const bool failSafeInfo)
 void initLocaleContext()
 {
 	locale::global(locale(""));
-	systemEncoding = nl_langinfo(CODESET);
+	systemEncoding = systemCharset();
 }
 
 struct UnableToLoadVGMFile : public Exception
@@ -222,7 +221,7 @@ try {
 			nonInfoSpecified = true;
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
 			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags.insert(P(tag, stringToUTF16LE(::optarg, systemEncoding)));
+			tags.insert(P(tag, stringToUTF16LE(::optarg, systemEncoding.c_str())));
 		} else {
 			switch (c) {
 			case 'i':
