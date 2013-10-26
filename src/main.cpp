@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include "vgm.h"
 
 #include <afc/Exception.h>
-#include <afc/math_utils.h>
+#include <afc/string_util.hpp>
 #include <afc/utils.h>
 
 using namespace std;
