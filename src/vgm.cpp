@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013 Dzmitry Liauchuk
+Copyright (C) 2013-2014 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ namespace
 		cursor += n;
 	}
 
-	unsigned readTag(u16string &dest, InputStream &src, size_t &cursor)
+	inline unsigned readTag(u16string &dest, InputStream &src, size_t &cursor)
 	{
 		unsigned char buf[2];
 		for (;;) {
@@ -46,7 +46,7 @@ namespace
 		return 2*(dest.size()+1);
 	}
 
-	void writeTag(const u16string &src, OutputStream &out)
+	inline void writeTag(const u16string &src, OutputStream &out)
 	{
 		unsigned char buf[2];
 		for (size_t i = 0, n = src.size(); i < n; ++i) {
@@ -57,21 +57,21 @@ namespace
 		out.write(buf, 2);
 	}
 
-	uint32_t readUInt32(InputStream &in, size_t &cursor)
+	inline uint32_t readUInt32(InputStream &in, size_t &cursor)
 	{
 		unsigned char buf[4];
 		readBytes(buf, 4, in, cursor);
 		return UInt32<>::fromBytes<LE>(buf);
 	}
 
-	void writeUInt32(const uint32_t val, OutputStream &out)
+	inline void writeUInt32(const uint32_t val, OutputStream &out)
 	{
 		unsigned char buf[4];
 		UInt32<>(val).toBytes<LE>(buf);
 		out.write(buf, 4);
 	}
 
-	void setPos(InputStream &s, const size_t pos, size_t &cursor)
+	inline void setPos(InputStream &s, const size_t pos, size_t &cursor)
 	{
 		if (cursor == pos) {
 			return;
