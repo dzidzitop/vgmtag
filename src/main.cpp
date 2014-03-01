@@ -131,7 +131,7 @@ void printVersion()
 		author = "Dzmitry Liauchuk";
 	}
 	cout << PROGRAM_NAME << " " << PROGRAM_VERSION << "\n\
-Copyright (C) 2013 " << author << ".\n\
+Copyright (C) 2013-2014 " << author << ".\n\
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n\
 This is free software: you are free to change and redistribute it.\n\
 There is NO WARRANTY, to the extent permitted by law.\n\
