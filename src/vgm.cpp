@@ -24,6 +24,23 @@ namespace
 {
 	static const afc::endianness LE = afc::endianness::LE;
 
+	const uint32_t VERSION_1_00 = 0x00000100;
+	const uint32_t VERSION_1_01 = 0x00000101;
+	const uint32_t VERSION_1_10 = 0x00000110;
+	const uint32_t VERSION_1_50 = 0x00000150;
+
+	/* For versions prior to 1.50, VGM data offset should be 0 and the VGM data must start
+	 * at absolute offset 0x40 (relative 0x0c).
+	 */
+	const uint32_t DEFAULT_VGM_DATA_OFFSET = 0x0c;
+
+	/* For version 1.01 and earlier files:
+	 * - the feedback pattern (16 bits) should be assumed to be 0x0009;
+	 * - the shift register width (8 bits) should be assumed to be 16;
+	 * - reserved 8 bits should be left at zero.
+	 */
+	const unsigned char DEFAULT_SN76489[] = {0, 0x09, 16, 0};
+
 	inline void readBytes(unsigned char buf[], const size_t n, InputStream &in, size_t &cursor)
 	{
 		if (in.read(buf, n) != n) {
@@ -96,11 +113,16 @@ void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 		}
 	}
 	m_header.eofOffset = readUInt32(in, cursor);
+	// TODO support all VGM versions up to v1.61
+	const uint32_t version = readUInt32(in, cursor);
 	{ // VGM version
-		m_header.version = readUInt32(in, cursor);
-		if (m_header.version != VGMHeader::VGM_FILE_VERSION) {
+		if (version != VERSION_1_00 &&
+				version != VERSION_1_01 &&
+				version != VERSION_1_10 &&
+				version != VERSION_1_50) {
 			throw UnsupportedFormatException("Unsupported VGM version");
 		}
+		m_header.version = version;
 	}
 	m_header.snClock = readUInt32(in, cursor);
 	m_header.ym2413Clock = readUInt32(in, cursor);
@@ -108,11 +130,31 @@ void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 	m_header.sampleCount = readUInt32(in, cursor);
 	m_header.loopOffset = readUInt32(in, cursor);
 	m_header.loopSampleCount = readUInt32(in, cursor);
-	m_header.rate = readUInt32(in, cursor);
-	m_header.snFeedback = readUInt32(in, cursor);
-	m_header.ym2612Clock = readUInt32(in, cursor);
-	m_header.ym2151Clock = readUInt32(in, cursor);
-	m_header.vgmDataOffset = readUInt32(in, cursor);
+
+	const uint32_t rate = readUInt32(in, cursor);
+	const uint32_t sn76489 = readUInt32(in, cursor);
+	const uint32_t ym2612Clock = readUInt32(in, cursor);
+	const uint32_t ym2151Clock = readUInt32(in, cursor);
+	const uint32_t vgmDataOffset = readUInt32(in, cursor);
+
+	// VGM 1.00 files will have a value of 0. Overriding the real value in this case.
+	m_header.rate = version < VERSION_1_01 ? 0 : rate;
+
+	if (version < VERSION_1_10) {
+		// For version 1.01 and earlier files, the assumed default value is set.
+		m_header.sn76489 = UInt16<>::fromBytes<LE>(DEFAULT_SN76489);
+		// For version 1.01 and earlier files, the YM2413 clock rate should be used for the clock rate of the YM2612.
+		m_header.ym2612Clock = m_header.ym2413Clock;
+		// For version 1.01 and earlier files, the YM2413 clock rate should be used for the clock rate of the YM2151.
+		m_header.ym2151Clock = m_header.ym2413Clock;
+	} else {
+		m_header.sn76489 = sn76489;
+		m_header.ym2612Clock = ym2612Clock;
+		m_header.ym2151Clock = ym2151Clock;
+	}
+
+	// For versions prior to 1.50, it should be 0 and the VGM data must start at offset 0x40.
+	m_header.vgmDataOffset = version < VERSION_1_50 ? 0 : vgmDataOffset;
 }
 
 void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
@@ -145,7 +187,10 @@ void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
 
 void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
 {
-	const size_t absoluteDataOffset = m_header.vgmDataOffset + VGMHeader::POS_VGM_DATA;
+	// For versions prior to 1.50 VGM data offset is 0 but assumed to be 0x0c.
+	const size_t vgmDataOffset = m_header.version < VERSION_1_50 ? DEFAULT_VGM_DATA_OFFSET : m_header.vgmDataOffset;
+
+	const size_t absoluteDataOffset = vgmDataOffset + VGMHeader::POS_VGM_DATA;
 	const size_t absoluteEOFOffset = m_header.eofOffset + VGMHeader::POS_EOF;
 	if (m_header.gd3Offset == 0) { // header -> data -> eof
 		m_dataSize = absoluteEOFOffset - absoluteDataOffset;
@@ -209,11 +254,18 @@ void vgm::VGMFile::writeContent(OutputStream &out) const
 	writeUInt32(m_header.sampleCount, out);
 	writeUInt32(m_header.loopOffset, out);
 	writeUInt32(m_header.loopSampleCount, out);
-	writeUInt32(m_header.rate, out);
-	writeUInt32(m_header.snFeedback, out);
-	writeUInt32(m_header.ym2612Clock, out);
-	writeUInt32(m_header.ym2151Clock, out);
-	writeUInt32(m_header.vgmDataOffset, out);
+
+	const uint32_t rate = m_header.version < VERSION_1_01 ? 0 : m_header.rate;
+	const uint32_t sn76489 = m_header.version < VERSION_1_10 ? 0 : m_header.sn76489;
+	const uint32_t ym2612Clock = m_header.version < VERSION_1_10 ? 0 : m_header.ym2612Clock;
+	const uint32_t ym2151Clock = m_header.version < VERSION_1_10 ? 0 : m_header.ym2151Clock;
+	const uint32_t vgmDataOffset = m_header.version < VERSION_1_50 ? 0 : m_header.vgmDataOffset;
+
+	writeUInt32(rate, out);
+	writeUInt32(sn76489, out);
+	writeUInt32(ym2612Clock, out);
+	writeUInt32(ym2151Clock, out);
+	writeUInt32(vgmDataOffset, out);
 	writeUInt32(0, out); // reserved
 	writeUInt32(0, out); // reserved
 

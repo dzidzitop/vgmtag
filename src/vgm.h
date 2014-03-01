@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013 Dzmitry Liauchuk
+Copyright (C) 2013-2014 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -69,15 +69,13 @@ namespace vgm
 
 			/* Despite of the platform endianness these values are stored in files in the little-endian format and
 			   are converted into the platform format while parsing the file. */
-			static const uint32_t VGM_FILE_ID = 0x206d6756; // 'Vgm ' as 4 bytes casted to little-endian int32
-			// TODO support all VGM versions up to v1.61
-			static const uint32_t VGM_FILE_VERSION = 0x00000150;
+			static const uint32_t VGM_FILE_ID = 0x206d6756; // 'Vgm ' in ASCII as 4 bytes casted to little-endian int32.
 
 			static const uint32_t HEADER_SIZE = 0x40;
 
 			uint32_t id, eofOffset, version, snClock,
 					ym2413Clock, gd3Offset, sampleCount, loopOffset,
-					loopSampleCount, rate, snFeedback, ym2612Clock,
+					loopSampleCount, rate, sn76489, ym2612Clock,
 					ym2151Clock, vgmDataOffset;
 		};
 		struct GD3Info

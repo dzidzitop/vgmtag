@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013 Dzmitry Liauchuk
+Copyright (C) 2013-2014 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 namespace vgm
 {
 	const char * const PROGRAM_NAME = "vgmtag";
-	const char * const PROGRAM_VERSION = "0.2.1";
+	const char * const PROGRAM_VERSION = "0.3.0";
 }
 
 #endif /* VGM_VERSION_H_ */
