@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013 Dzmitry Liauchuk
+Copyright (C) 2013-2014 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -202,6 +202,7 @@ typedef map<Tag, const u16string> M;
 typedef M::value_type P;
 }
 
+// TODO add support of migrating to another VGM file version.
 int main(const int argc, char * argv[])
 try {
 	initLocaleContext();
