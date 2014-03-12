@@ -50,6 +50,10 @@ namespace vgm
 
 		Format getFormat() const {return m_format;}
 	private:
+		static const uint32_t VERSION_1_00 = 0x00000100, VERSION_1_01 = 0x00000101, VERSION_1_10 = 0x00000110,
+				VERSION_1_50 = 0x00000150, VERSION_1_51 = 0x00000151, VERSION_1_60 = 0x00000160,
+				VERSION_1_61 = 0x00000161;
+
 		VGMFile(const VGMFile &) = delete;
 		VGMFile &operator=(const VGMFile &) = delete;
 
@@ -61,14 +65,24 @@ namespace vgm
 
 		void writeContent(afc::OutputStream &out) const;
 
+		size_t version() const { return m_header.elements[VGMHeader::IDX_VERSION]; }
+
+		size_t absoluteVgmDataOffset() const
+		{
+			return VGMHeader::POS_VGM_DATA + (version() < VERSION_1_50 ?
+					VGMHeader::DEFAULT_VGM_DATA_OFFSET : m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET]);
+		}
+
 		struct VGMHeader
 		{
+			/* For versions prior to 1.50, VGM data offset should be 0 and the VGM data must start
+			 * at absolute offset 0x40 (relative 0x0c).
+			 */
+			static const size_t DEFAULT_VGM_DATA_OFFSET = 0x0c;
+
 			// Absolute positions of VGM header constituents in the header.
 			static const uint32_t POS_EOF = 0x4, POS_SN_CLOCK = 0xc, POS_YM2413_CLOCK = 0x10, POS_GD3 = 0x14,
 					POS_LOOP = 0x1c, POS_YM2112_CLOCK = 0x2c, POS_YM2151_CLOCK = 0x30, POS_VGM_DATA = 0x34;
-
-			// The maximal header size of supported VGM file formats in octets.
-			static const uint32_t HEADER_SIZE = 0xc0;
 
 			/* Despite of the platform endianness these values are stored in files in the little-endian format and
 			   are converted into the platform format while parsing the file. */
@@ -78,8 +92,12 @@ namespace vgm
 			static const uint32_t IDX_ID = 0x00, IDX_EOF_OFFSET = 0x01, IDX_VERSION = 0x02, IDX_GD3_OFFSET = 0x05,
 					IDX_RATE = 0x09, IDX_YM2612_CLOCK = 0x0b, IDX_YM2151_CLOCK = 0x0c, IDX_VGM_DATA_OFFSET = 0x0d;
 
-			uint32_t elements[HEADER_SIZE];
+			// The maximal number of elements of the VGM header (for all supported versions).
+			static const size_t ELEMENT_COUNT = 0xc0 / 4;
+
+			uint32_t elements[ELEMENT_COUNT];
 		};
+
 		struct GD3Info
 		{
 			/* Despite of the platform endianness these values are stored in files in the little-endian format and

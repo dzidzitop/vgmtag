@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include "vgm.h"
 #include <afc/cpu/primitive.h>
 #include <memory>
+#include <algorithm>
 
 using namespace afc;
 using namespace std;
@@ -24,20 +25,10 @@ namespace
 {
 	static const afc::endianness LE = afc::endianness::LE;
 
-	const uint32_t VERSION_1_00 = 0x00000100;
-	const uint32_t VERSION_1_01 = 0x00000101;
-	const uint32_t VERSION_1_10 = 0x00000110;
-	const uint32_t VERSION_1_50 = 0x00000150;
-	const uint32_t VERSION_1_51 = 0x00000151;
-	const uint32_t VERSION_1_60 = 0x00000160;
-	const uint32_t VERSION_1_61 = 0x00000161;
-
-	const uint32_t SHORT_HEADER_SIZE = 0x40;
-
-	/* For versions prior to 1.50, VGM data offset should be 0 and the VGM data must start
-	 * at absolute offset 0x40 (relative 0x0c).
-	 */
-	const uint32_t DEFAULT_VGM_DATA_OFFSET = 0x0c;
+	// The minimal normalised header size of supported VGM file formats in octets.
+	const size_t SHORT_HEADER_SIZE = 0x40;
+	// The maximal normalised header size of supported VGM file formats in octets.
+	const size_t LONG_HEADER_SIZE = 0xc0;
 
 	/* For version 1.01 and earlier files:
 	 * - the feedback pattern (16 bits) should be assumed to be 0x0009;
@@ -114,9 +105,10 @@ namespace
 void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 {
 	// TODO support all VGM versions up to v1.61
+	size_t i = 0; // Index of the header element to be read.
 
 	// Reading the base header. It is required for all versions of the VGM format.
-	for (size_t i = 0, n = SHORT_HEADER_SIZE / 4; i < n; ++i) {
+	for (size_t n = SHORT_HEADER_SIZE / 4; i < n; ++i) {
 		m_header.elements[i] = readUInt32(in, cursor);
 	}
 
@@ -124,22 +116,24 @@ void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 		throw MalformedFormatException("Not a VGM/VGZ file");
 	}
 
-	const uint32_t version = m_header.elements[VGMHeader::IDX_VERSION];
-	if (version != VERSION_1_00 &&
-			version != VERSION_1_01 &&
-			version != VERSION_1_10 &&
-			version != VERSION_1_50 &&
-			version != VERSION_1_51) {
+	const uint32_t ver = version();
+	if (ver != VERSION_1_00 &&
+			ver != VERSION_1_01 &&
+			ver != VERSION_1_10 &&
+			ver != VERSION_1_50 &&
+			ver != VERSION_1_51) {
 		throw UnsupportedFormatException("Unsupported VGM version");
 	}
 
-	if (version >= VERSION_1_51) {
-		const uint32_t realHeaderSize = m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET];
-		for (size_t i = SHORT_HEADER_SIZE / 4; i < realHeaderSize; ++i) {
+	if (ver >= VERSION_1_51) {
+		// If the VGM data starts at an offset that is lower than 0xC0, all overlapping header values will be zero.
+		const size_t realHeaderElemCount = min(absoluteVgmDataOffset() / 4, VGMHeader::ELEMENT_COUNT);
+
+		for (; i < realHeaderElemCount; ++i) {
 			m_header.elements[i] = readUInt32(in, cursor);
 		}
-		// If the VGM data starts at an offset that is lower than 0xC0, all overlapping header values will be zero.
-		for (size_t i = realHeaderSize / 4; i < VGMHeader::HEADER_SIZE; ++i) {
+
+		for (; i < VGMHeader::ELEMENT_COUNT; ++i) {
 			m_header.elements[i] = 0;
 		}
 	}
@@ -175,24 +169,20 @@ void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
 
 void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
 {
-	// For versions prior to 1.50 VGM data offset is 0 but assumed to be 0x0c.
-	const size_t vgmDataOffset = m_header.elements[VGMHeader::IDX_VERSION] < VERSION_1_50 ?
-			DEFAULT_VGM_DATA_OFFSET : m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET];
-
-	const size_t absoluteDataOffset = vgmDataOffset + VGMHeader::POS_VGM_DATA;
+	const size_t absDataOffset = absoluteVgmDataOffset();
 	const size_t absoluteEOFOffset = m_header.elements[VGMHeader::IDX_EOF_OFFSET] + VGMHeader::POS_EOF;
 	const size_t gd3Offset = m_header.elements[VGMHeader::IDX_GD3_OFFSET];
 	if (gd3Offset == 0) { // header -> data -> eof
-		m_dataSize = absoluteEOFOffset - absoluteDataOffset;
+		m_dataSize = absoluteEOFOffset - absDataOffset;
 	} else { // GD3 info exists, the data takes the space between the header and GD3
 		const size_t absoluteGD3Offset = gd3Offset + VGMHeader::POS_GD3;
-		if (absoluteGD3Offset > absoluteDataOffset) { // header -> data -> gd3 -> eof
-			m_dataSize = absoluteGD3Offset - absoluteDataOffset;
+		if (absoluteGD3Offset > absDataOffset) { // header -> data -> gd3 -> eof
+			m_dataSize = absoluteGD3Offset - absDataOffset;
 		} else { // header -> gd3 -> data -> eof
-			m_dataSize = absoluteEOFOffset - absoluteDataOffset;
+			m_dataSize = absoluteEOFOffset - absDataOffset;
 		}
 	}
-	setPos(in, absoluteDataOffset, cursor);
+	setPos(in, absDataOffset, cursor);
 	m_data = new unsigned char[m_dataSize];
 	readBytes(m_data, m_dataSize, in, cursor);
 }
@@ -234,10 +224,9 @@ catch (...) {
 
 void vgm::VGMFile::writeContent(OutputStream &out) const
 {
-	const size_t headerSize = m_header.elements[VGMHeader::IDX_VERSION] < VERSION_1_51 ?
-			SHORT_HEADER_SIZE : VGMHeader::HEADER_SIZE;
+	const size_t headerElemCount = version() < VERSION_1_51 ? SHORT_HEADER_SIZE / 4 : VGMHeader::ELEMENT_COUNT;
 	// Writing the base header. It is required for all versions of the VGM format.
-	for (size_t i = 0, n = headerSize / 4; i < n; ++i) {
+	for (size_t i = 0; i < headerElemCount; ++i) {
 		writeUInt32(m_header.elements[i], out);
 	}
 
@@ -276,17 +265,17 @@ void vgm::VGMFile::normalise()
 	}
 	m_gd3Info.dataSize = tagCharCount * 2; // UTF16-LE is used for GD3
 
-	const uint32_t version = m_header.elements[VGMHeader::IDX_VERSION];
+	const uint32_t ver = version();
 
-	const size_t headerSize = version < VERSION_1_51 ? SHORT_HEADER_SIZE : VGMHeader::HEADER_SIZE;
+	const size_t headerSize = ver < VERSION_1_51 ? SHORT_HEADER_SIZE : LONG_HEADER_SIZE;
 	const size_t fileSize = headerSize + m_dataSize + GD3Info::HEADER_SIZE + m_gd3Info.dataSize;
 	m_header.elements[VGMHeader::IDX_EOF_OFFSET] = fileSize - VGMHeader::POS_EOF;
 
-	if (version < VERSION_1_01) {
+	if (ver < VERSION_1_01) {
 		// VGM 1.00 files will have a value of 0. Overriding the real value in this case.
 		m_header.elements[VGMHeader::IDX_RATE] = 0;
 	}
-	if (version < VERSION_1_10) {
+	if (ver < VERSION_1_10) {
 		// For version 1.01 and earlier files, the YM2413 clock rate should be used for the clock rate of the YM2612.
 		m_header.elements[VGMHeader::IDX_YM2612_CLOCK] = 0;
 		// For version 1.01 and earlier files, the YM2413 clock rate should be used for the clock rate of the YM2151.
@@ -296,7 +285,7 @@ void vgm::VGMFile::normalise()
 	/* Forcing the VGM data to start at minimal absolute offset allowed for the given version of the VGM format.
 	 * For versions prior to 1.50, it should be 0 and the VGM data must start at offset 0x40.
 	 */
-	m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET] = version < VERSION_1_50 ?
+	m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET] = ver < VERSION_1_50 ?
 			0 : headerSize - VGMHeader::POS_VGM_DATA;
 }
 
