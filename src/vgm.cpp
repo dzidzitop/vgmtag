@@ -133,11 +133,6 @@ void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 		throw UnsupportedFormatException("Unsupported VGM version");
 	}
 
-	// For versions prior to 1.50, it should be 0 and the VGM data must start at offset 0x40.
-	if (version < VERSION_1_50) {
-		m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET] = 0;
-	}
-
 	if (version >= VERSION_1_51) {
 		const uint32_t realHeaderSize = m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET];
 		for (size_t i = SHORT_HEADER_SIZE / 4; i < realHeaderSize; ++i) {
@@ -298,7 +293,9 @@ void vgm::VGMFile::normalise()
 		m_header.elements[VGMHeader::IDX_YM2151_CLOCK] = 0;
 	}
 	// TODO does this affect gd3Offset? If yes then gd3Offset must be normalised, too.
-	// Forcing the VGM data to start at minimal absolute offset allowed for the given version of the VGM format.
+	/* Forcing the VGM data to start at minimal absolute offset allowed for the given version of the VGM format.
+	 * For versions prior to 1.50, it should be 0 and the VGM data must start at offset 0x40.
+	 */
 	m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET] = version < VERSION_1_50 ?
 			0 : headerSize - VGMHeader::POS_VGM_DATA;
 }
