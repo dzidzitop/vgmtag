@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 namespace vgm
 {
 	const char * const PROGRAM_NAME = "vgmtag";
-	const char * const PROGRAM_VERSION = "0.3.0";
+	const char * const PROGRAM_VERSION = "0.4.0";
 }
 
 #endif /* VGM_VERSION_H_ */

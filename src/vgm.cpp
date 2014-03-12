@@ -104,7 +104,6 @@ namespace
 
 inline void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 {
-	// TODO support all VGM versions up to v1.61
 	size_t i = 0; // Index of the header element to be read.
 
 	// Reading the base header. It is required for all versions of the VGM format.
@@ -121,7 +120,9 @@ inline void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 			ver != VERSION_1_01 &&
 			ver != VERSION_1_10 &&
 			ver != VERSION_1_50 &&
-			ver != VERSION_1_51) {
+			ver != VERSION_1_51 &&
+			ver != VERSION_1_60 &&
+			ver != VERSION_1_61) {
 		throw UnsupportedFormatException("Unsupported VGM version");
 	}
 
