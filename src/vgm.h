@@ -63,20 +63,22 @@ namespace vgm
 
 		struct VGMHeader
 		{
-			// absolute positions of VGM header constituents in the header
-			static const uint32_t POS_EOF = 0x4, POS_SN_CLOCK = 0xc, POS_YM2413_CLOCK = 0x10, POS_GD3 = 0x14, POS_LOOP = 0x1c,
-						POS_YM2112_CLOCK = 0x2c, POS_YM2151_CLOCK = 0x30, POS_VGM_DATA = 0x34;
+			// Absolute positions of VGM header constituents in the header.
+			static const uint32_t POS_EOF = 0x4, POS_SN_CLOCK = 0xc, POS_YM2413_CLOCK = 0x10, POS_GD3 = 0x14,
+					POS_LOOP = 0x1c, POS_YM2112_CLOCK = 0x2c, POS_YM2151_CLOCK = 0x30, POS_VGM_DATA = 0x34;
+
+			// The maximal header size of supported VGM file formats in octets.
+			static const uint32_t HEADER_SIZE = 0xc0;
 
 			/* Despite of the platform endianness these values are stored in files in the little-endian format and
 			   are converted into the platform format while parsing the file. */
 			static const uint32_t VGM_FILE_ID = 0x206d6756; // 'Vgm ' in ASCII as 4 bytes casted to little-endian int32.
 
-			static const uint32_t HEADER_SIZE = 0x40;
+			// These are index values to access some VGM header elements.
+			static const uint32_t IDX_ID = 0x00, IDX_EOF_OFFSET = 0x01, IDX_VERSION = 0x02, IDX_GD3_OFFSET = 0x05,
+					IDX_RATE = 0x09, IDX_YM2612_CLOCK = 0x0b, IDX_YM2151_CLOCK = 0x0c, IDX_VGM_DATA_OFFSET = 0x0d;
 
-			uint32_t id, eofOffset, version, snClock,
-					ym2413Clock, gd3Offset, sampleCount, loopOffset,
-					loopSampleCount, rate, sn76489, ym2612Clock,
-					ym2151Clock, vgmDataOffset;
+			uint32_t elements[HEADER_SIZE];
 		};
 		struct GD3Info
 		{
