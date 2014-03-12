@@ -30,7 +30,7 @@ namespace vgm
 		};
 
 		VGMFile(const char * const srcFile);
-		~VGMFile() {delete[] m_data;}
+		~VGMFile() { delete[] m_data; }
 
 		void save(const char * const dest, const Format format);
 
@@ -45,10 +45,17 @@ namespace vgm
 			author = 6, authorJP = 7, date = 8, converter = 9, notes = 10
 		};
 
-		void setTag(const Tag name, const std::u16string &value);
-		const std::u16string &getTag(const Tag name) const;
+		void setTag(const Tag name, const std::u16string &value)
+		{
+			m_gd3Info.tags[static_cast<size_t>(name)] = value;
+		}
 
-		Format getFormat() const {return m_format;}
+		const std::u16string &getTag(const Tag name) const
+		{
+			return m_gd3Info.tags[static_cast<size_t>(name)];
+		}
+
+		Format getFormat() const { return m_format; }
 	private:
 		static const uint32_t VERSION_1_00 = 0x00000100, VERSION_1_01 = 0x00000101, VERSION_1_10 = 0x00000110,
 				VERSION_1_50 = 0x00000150, VERSION_1_51 = 0x00000151, VERSION_1_60 = 0x00000160,

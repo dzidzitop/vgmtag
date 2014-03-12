@@ -102,7 +102,7 @@ namespace
 	}
 }
 
-void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
+inline void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 {
 	// TODO support all VGM versions up to v1.61
 	size_t i = 0; // Index of the header element to be read.
@@ -139,7 +139,7 @@ void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 	}
 }
 
-void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
+inline void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
 {
 	setPos(in, VGMHeader::POS_GD3 + m_header.elements[VGMHeader::IDX_GD3_OFFSET], cursor);
 
@@ -167,7 +167,7 @@ void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
 	}
 }
 
-void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
+inline void vgm::VGMFile::readData(InputStream &in, size_t &cursor)
 {
 	const size_t absDataOffset = absoluteVgmDataOffset();
 	const size_t absoluteEOFOffset = m_header.elements[VGMHeader::IDX_EOF_OFFSET] + VGMHeader::POS_EOF;
@@ -222,7 +222,7 @@ catch (...) {
 	throw;
 }
 
-void vgm::VGMFile::writeContent(OutputStream &out) const
+inline void vgm::VGMFile::writeContent(OutputStream &out) const
 {
 	const size_t headerElemCount = version() < VERSION_1_51 ? SHORT_HEADER_SIZE / 4 : VGMHeader::ELEMENT_COUNT;
 	// Writing the base header. It is required for all versions of the VGM format.
@@ -257,7 +257,7 @@ void vgm::VGMFile::save(const char * const dest, const Format format)
 	}
 }
 
-void vgm::VGMFile::normalise()
+inline void vgm::VGMFile::normalise()
 {
 	size_t tagCharCount = 0;
 	for (size_t i = static_cast<size_t>(Tag::title), n = static_cast<size_t>(Tag::notes); i <= n; ++i) {
@@ -287,14 +287,4 @@ void vgm::VGMFile::normalise()
 	 */
 	m_header.elements[VGMHeader::IDX_VGM_DATA_OFFSET] = ver < VERSION_1_50 ?
 			0 : headerSize - VGMHeader::POS_VGM_DATA;
-}
-
-void vgm::VGMFile::setTag(const Tag name, const u16string &value)
-{
-	m_gd3Info.tags[static_cast<size_t>(name)] = value;
-}
-
-const u16string &vgm::VGMFile::getTag(const Tag name) const
-{
-	return m_gd3Info.tags[static_cast<size_t>(name)];
 }
