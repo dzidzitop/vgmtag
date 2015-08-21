@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013-2014 Dźmitry Laŭčuk
+Copyright (C) 2013-2015 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -13,6 +13,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+#include <cstring>
 #include <exception>
 #include <map>
 #include <iostream>
@@ -27,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 #include <afc/Exception.h>
 #include <afc/string_util.hpp>
+#include <afc/StringRef.hpp>
 #include <afc/utils.h>
 
 using namespace std;
@@ -131,7 +133,7 @@ void printVersion()
 		author = "Dzmitry Liauchuk";
 	}
 	cout << PROGRAM_NAME << " " << PROGRAM_VERSION << "\n\
-Copyright (C) 2013-2014 " << author << ".\n\
+Copyright (C) 2013-2015 " << author << ".\n\
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n\
 This is free software: you are free to change and redistribute it.\n\
 There is NO WARRANTY, to the extent permitted by law.\n\
@@ -322,6 +324,8 @@ try {
 		vgmFile->setTag(entry.first, entry.second);
 	}
 
+	ConstStringRef vgzExt = ".vgz"_s;
+
 	Format outputFormat;
 	if (forceVGM) {
 		outputFormat = Format::vgm;
@@ -329,7 +333,7 @@ try {
 		outputFormat = Format::vgz;
 	} else if (saveToSameFile) {
 		outputFormat = vgmFile->getFormat();
-	} else if (endsWith(destFile, ".vgz")) {
+	} else if (endsWith(destFile, destFile + std::strlen(destFile), vgzExt.begin(), vgzExt.end())) {
 		outputFormat = Format::vgz;
 	} else {
 		outputFormat = Format::vgm;
