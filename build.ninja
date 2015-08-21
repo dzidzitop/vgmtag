@@ -1,6 +1,6 @@
 srcDir=src
 buildDir=build
-cxxFlags=-I"lib/include" -Wall -fPIC -std=c++11 -O2
+cxxFlags=-I"lib/include" -Wall -fPIC -std=c++11 -O2 -DNDEBUG
 ldFlags=-Llib
 
 rule cxx
