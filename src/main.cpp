@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include "vgm.h"
 
 #include <afc/Exception.h>
+#include <afc/FastStringBuffer.hpp>
+#include <afc/SimpleString.hpp>
 #include <afc/string_util.hpp>
 #include <afc/StringRef.hpp>
 #include <afc/utils.h>
@@ -41,7 +43,7 @@ namespace {
 // TODO resolve it dynamically using argv[0]?
 const char * const programName = "vgmtag";
 const int getopt_tagStartValue = 1000;
-static string systemEncoding;
+static afc::String systemEncoding;
 
 static const struct option options[] = {
 	{"title", required_argument, nullptr, getopt_tagStartValue + static_cast<int>(Tag::title)},
@@ -119,26 +121,28 @@ and capitalisation the same). Here are some standard system names:\n\
   BBC Model B+\n\
   BBC Master 128\n\
 \n\
-Report " << programName << " bugs to dzidzitop@lavabit.com" << endl;
+Report " << programName << " bugs to dzidzitop@vfemail.net" << endl;
 	}
 }
 
 void printVersion()
 {
-	string author;
+	afc::String author;
 	try {
-		author = utf16leToString(u"D\u017Amitry La\u016D\u010Duk", systemEncoding.c_str());
+		const char16_t name[] = u"D\u017Amitry La\u016D\u010Duk";
+		author = utf16leToString(name, sizeof(name) - 1, systemEncoding.c_str());
 	}
 	catch (MalformedFormatException &ex) {
-		author = "Dzmitry Liauchuk";
+		author = "Dzmitry Liauchuk"_s;
 	}
+	const char * const authorPtr = author.c_str();
 	cout << PROGRAM_NAME << " " << PROGRAM_VERSION << "\n\
-Copyright (C) 2013-2015 " << author << ".\n\
+Copyright (C) 2013-2015 " << authorPtr << ".\n\
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n\
 This is free software: you are free to change and redistribute it.\n\
 There is NO WARRANTY, to the extent permitted by law.\n\
 \n\
-Written by " << author << '.' << endl;
+Written by " << authorPtr << '.' << endl;
 }
 
 void printOutputFormatConflict()
@@ -148,35 +152,40 @@ void printOutputFormatConflict()
 
 void printInfo(const VGMFile &vgmFile, const bool failSafeInfo)
 {
-	string encoding(systemEncoding);
+	afc::FastStringBuffer<char, afc::AllocMode::accurate> encoding(
+			systemEncoding.size() + (failSafeInfo ? "//TRANSLIT"_s.size() : 0));
+	encoding.append(systemEncoding.data(), systemEncoding.size());
 	if (failSafeInfo) {
-		encoding += "//TRANSLIT";
+		encoding.append("//TRANSLIT"_s);
 	}
-	const string title(utf16leToString(vgmFile.getTag(Tag::title), encoding.c_str()));
-	const string titleJP(utf16leToString(vgmFile.getTag(Tag::titleJP), encoding.c_str()));
-	const string game(utf16leToString(vgmFile.getTag(Tag::game), encoding.c_str()));
-	const string gameJP(utf16leToString(vgmFile.getTag(Tag::gameJP), encoding.c_str()));
-	const string system(utf16leToString(vgmFile.getTag(Tag::system), encoding.c_str()));
-	const string systemJP(utf16leToString(vgmFile.getTag(Tag::systemJP), encoding.c_str()));
-	const string author(utf16leToString(vgmFile.getTag(Tag::author), encoding.c_str()));
-	const string authorJP(utf16leToString(vgmFile.getTag(Tag::authorJP), encoding.c_str()));
-	const string date(utf16leToString(vgmFile.getTag(Tag::date), encoding.c_str()));
-	const string converter(utf16leToString(vgmFile.getTag(Tag::converter), encoding.c_str()));
-	const string notes(utf16leToString(vgmFile.getTag(Tag::notes), encoding.c_str()));
+
+	const char * const encodingStr = encoding.c_str();
+
+	const afc::String title(utf16leToString(vgmFile.getTag(Tag::title), encodingStr));
+	const afc::String titleJP(utf16leToString(vgmFile.getTag(Tag::titleJP), encodingStr));
+	const afc::String game(utf16leToString(vgmFile.getTag(Tag::game), encodingStr));
+	const afc::String gameJP(utf16leToString(vgmFile.getTag(Tag::gameJP), encodingStr));
+	const afc::String system(utf16leToString(vgmFile.getTag(Tag::system), encodingStr));
+	const afc::String systemJP(utf16leToString(vgmFile.getTag(Tag::systemJP), encodingStr));
+	const afc::String author(utf16leToString(vgmFile.getTag(Tag::author), encodingStr));
+	const afc::String authorJP(utf16leToString(vgmFile.getTag(Tag::authorJP), encodingStr));
+	const afc::String date(utf16leToString(vgmFile.getTag(Tag::date), encodingStr));
+	const afc::String converter(utf16leToString(vgmFile.getTag(Tag::converter), encodingStr));
+	const afc::String notes(utf16leToString(vgmFile.getTag(Tag::notes), encodingStr));
 
 	cout << "File format:\t\t" << (vgmFile.getFormat() == Format::vgm ? "VGM" : "VGZ") << '\n';
 	cout << "--------\n";
-	cout << "Title (Latin):\t\t" << title << '\n';
-	cout << "Title (Japanese):\t" << titleJP << '\n';
-	cout << "Game (Latin):\t\t" << game << '\n';
-	cout << "Game (Japanese):\t" << gameJP << '\n';
-	cout << "System (Latin):\t\t" << system << '\n';
-	cout << "System (Japanese):\t" << systemJP << '\n';
-	cout << "Author (Latin):\t\t" << author << '\n';
-	cout << "Author (Japanese):\t" << authorJP << '\n';
-	cout << "Date:\t\t\t" << date << '\n';
-	cout << "Converter:\t\t" << converter << '\n';
-	cout << "Notes:\t\t\t" << notes << endl;
+	cout << "Title (Latin):\t\t" << title.c_str() << '\n';
+	cout << "Title (Japanese):\t" << titleJP.c_str() << '\n';
+	cout << "Game (Latin):\t\t" << game.c_str() << '\n';
+	cout << "Game (Japanese):\t" << gameJP.c_str() << '\n';
+	cout << "System (Latin):\t\t" << system.c_str() << '\n';
+	cout << "System (Japanese):\t" << systemJP.c_str() << '\n';
+	cout << "Author (Latin):\t\t" << author.c_str() << '\n';
+	cout << "Author (Japanese):\t" << authorJP.c_str() << '\n';
+	cout << "Date:\t\t\t" << date.c_str() << '\n';
+	cout << "Converter:\t\t" << converter.c_str() << '\n';
+	cout << "Notes:\t\t\t" << notes.c_str() << endl;
 }
 
 void initLocaleContext()
@@ -200,7 +209,7 @@ unique_ptr<VGMFile> loadFile(const char * const src)
 	}
 }
 
-typedef map<Tag, const u16string> M;
+typedef map<Tag, afc::U16String> M;
 typedef M::value_type P;
 }
 
@@ -224,7 +233,7 @@ try {
 			nonInfoSpecified = true;
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
 			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags.insert(P(tag, stringToUTF16LE(::optarg, systemEncoding.c_str())));
+			tags.insert(P(tag, std::move(stringToUTF16LE(::optarg, systemEncoding.c_str()))));
 		} else {
 			switch (c) {
 			case 'i':
@@ -311,8 +320,8 @@ try {
 			printInfo(*vgmFilePtr, failSafeInfo);
 		}
 		catch (MalformedFormatException &ex) {
-			cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" << systemEncoding <<
-					"). Try to run the program with the --info-failsafe option." << endl;
+			cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" <<
+					systemEncoding.c_str() << "). Try to run the program with the --info-failsafe option." << endl;
 			return 1;
 		}
 		return 0;
@@ -320,8 +329,8 @@ try {
 
 	const unique_ptr<VGMFile> vgmFile = loadFile(src);
 
-	for (const P &entry : tags) {
-		vgmFile->setTag(entry.first, entry.second);
+	for (P &entry : tags) {
+		vgmFile->setTag(entry.first, std::move(entry.second));
 	}
 
 	ConstStringRef vgzExt = ".vgz"_s;

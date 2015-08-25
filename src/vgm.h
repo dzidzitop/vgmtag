@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013-2014 Dźmitry Laŭčuk
+Copyright (C) 2013-2015 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -13,11 +13,16 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-#include <afc/stream.h>
-#include <afc/Exception.h>
-#include <cstdint>
-#include <string>
+#ifndef VGM_H_
+#define VGM_H_
+
 #include <cstddef>
+#include <cstdint>
+#include <utility>
+
+#include <afc/Exception.h>
+#include <afc/SimpleString.hpp>
+#include <afc/stream.h>
 
 namespace vgm
 {
@@ -45,12 +50,12 @@ namespace vgm
 			author = 6, authorJP = 7, date = 8, converter = 9, notes = 10
 		};
 
-		void setTag(const Tag name, const std::u16string &value)
+		void setTag(const Tag name, const afc::U16String &&value)
 		{
-			m_gd3Info.tags[static_cast<size_t>(name)] = value;
+			m_gd3Info.tags[static_cast<size_t>(name)] = std::move(value);
 		}
 
-		const std::u16string &getTag(const Tag name) const
+		const afc::U16String &getTag(const Tag name) const
 		{
 			return m_gd3Info.tags[static_cast<size_t>(name)];
 		}
@@ -115,7 +120,7 @@ namespace vgm
 			static const uint32_t HEADER_SIZE = 0x0c;
 
 			size_t dataSize;
-			std::u16string tags[static_cast<size_t>(Tag::notes) + 1];
+			afc::U16String tags[static_cast<size_t>(Tag::notes) + 1];
 		};
 
 		VGMHeader m_header;
@@ -125,3 +130,5 @@ namespace vgm
 		Format m_format;
 	};
 }
+
+#endif // VGM_H_

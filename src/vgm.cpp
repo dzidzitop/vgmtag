@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013-2014 Dźmitry Laŭčuk
+Copyright (C) 2013-2015 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,6 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <afc/cpu/primitive.h>
 #include <memory>
 #include <algorithm>
+
+#include <afc/FastStringBuffer.hpp>
+#include <afc/SimpleString.hpp>
 
 using namespace afc;
 using namespace std;
@@ -47,21 +50,25 @@ namespace
 		cursor += n;
 	}
 
-	inline unsigned readTag(u16string &dest, InputStream &src, size_t &cursor)
+	inline unsigned readTag(afc::U16String &dest, InputStream &src, size_t &cursor)
 	{
 		unsigned char buf[2];
+		afc::FastStringBuffer<char16_t> result(15);
 		for (;;) {
 			readBytes(buf, 2, src, cursor);
 			const char16_t c = UInt16<>::fromBytes<LE>(buf);
 			if (c == 0) {
 				break;
 			}
-			dest.push_back(c);
+			result.reserveForOne();
+			result.append(c);
 		}
-		return 2*(dest.size()+1);
+		const std::size_t resultSize = result.size();
+		dest.attach(result.detach(), resultSize);
+		return 2*(resultSize+1);
 	}
 
-	inline void writeTag(const u16string &src, OutputStream &out)
+	inline void writeTag(const afc::U16String &src, OutputStream &out)
 	{
 		unsigned char buf[2];
 		for (size_t i = 0, n = src.size(); i < n; ++i) {
