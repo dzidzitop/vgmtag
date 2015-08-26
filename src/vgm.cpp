@@ -14,12 +14,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include "vgm.h"
-#include <afc/cpu/primitive.h>
-#include <memory>
-#include <algorithm>
 
+#include <algorithm>
+#include <memory>
+#include <ostream>
+
+#include <afc/cpu/primitive.h>
 #include <afc/FastStringBuffer.hpp>
 #include <afc/SimpleString.hpp>
+#include <afc/StringRef.hpp>
 
 using namespace afc;
 using namespace std;
@@ -45,7 +48,7 @@ namespace
 	inline void readBytes(unsigned char buf[], const size_t n, InputStream &in, size_t &cursor)
 	{
 		if (in.read(buf, n) != n) {
-			throw MalformedFormatException("Premature end of file");
+			throw Exception("Premature end of file"_s);
 		}
 		cursor += n;
 	}
@@ -119,7 +122,7 @@ inline void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 	}
 
 	if (m_header.elements[VGMHeader::IDX_ID] != VGMHeader::VGM_FILE_ID) {
-		throw MalformedFormatException("Not a VGM/VGZ file");
+		throw Exception("Not a VGM/VGZ file"_s);
 	}
 
 	const uint32_t ver = version();
@@ -130,7 +133,7 @@ inline void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 			ver != VERSION_1_51 &&
 			ver != VERSION_1_60 &&
 			ver != VERSION_1_61) {
-		throw UnsupportedFormatException("Unsupported VGM version");
+		throw Exception("Unsupported VGM version"_s);
 	}
 
 	if (ver >= VERSION_1_51) {
@@ -149,18 +152,20 @@ inline void vgm::VGMFile::readHeader(InputStream &in, size_t &cursor)
 
 inline void vgm::VGMFile::readGD3Info(InputStream &in, size_t &cursor)
 {
+	using std::operator<<;
+
 	setPos(in, VGMHeader::POS_GD3 + m_header.elements[VGMHeader::IDX_GD3_OFFSET], cursor);
 
 	{ // VGM ID
 		const uint32_t vgmId = readUInt32(in, cursor);
 		if (vgmId != GD3Info::VGM_FILE_GD3_ID) {
-			throw MalformedFormatException("Not a VGM file");
+			throw Exception("Not a VGM file"_s);
 		}
 	}
 	{ // GD3 version
 		const uint32_t gd3Version = readUInt32(in, cursor);
 		if (gd3Version != GD3Info::VGM_FILE_GD3_VERSION) {
-			throw UnsupportedFormatException("Unsupported GD3 version");
+			throw Exception("Unsupported GD3 version"_s);
 		}
 	}
 
@@ -202,7 +207,7 @@ try
 	unique_ptr<InputStream> inPtr(new FileInputStream(srcFile));
 	unsigned char buf[4];
 	if (inPtr->read(buf, 4) != 4) {
-		throw MalformedFormatException("Not a VGM/VGZ file"); // the file is too short to be either a VGM or VGZ file
+		throw Exception("Not a VGM/VGZ file"_s); // the file is too short to be either a VGM or VGZ file
 	}
 	if (buf[0] == 0x1f && buf[1] == 0x8b) { // a VGZ (GZip) file. GZip file magic header is {0x1f, 0x8b}
 		/* Ensure that the file is not opened twice at the same time.

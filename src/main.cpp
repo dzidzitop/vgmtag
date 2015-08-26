@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <iostream>
 #include <memory>
 #include <locale>
-#include <string>
+#include <ostream>
+#include <utility>
 
 #include <getopt.h>
 
@@ -66,6 +67,8 @@ static const struct option options[] = {
 
 void printUsage(bool success, const char * const programName = ::programName)
 {
+	using std::operator<<;
+
 	if (!success) {
 		cout << "Try '" << programName << " --help' for more information." << endl;
 	} else {
@@ -127,12 +130,14 @@ Report " << programName << " bugs to dzidzitop@vfemail.net" << endl;
 
 void printVersion()
 {
+	using std::operator<<;
+
 	afc::String author;
 	try {
 		const char16_t name[] = u"D\u017Amitry La\u016D\u010Duk";
 		author = utf16leToString(name, sizeof(name) - 1, systemEncoding.c_str());
 	}
-	catch (MalformedFormatException &ex) {
+	catch (Exception &ex) {
 		author = "Dzmitry Liauchuk"_s;
 	}
 	const char * const authorPtr = author.c_str();
@@ -147,11 +152,15 @@ Written by " << authorPtr << '.' << endl;
 
 void printOutputFormatConflict()
 {
+	using std::operator<<;
+
 	cerr << "Cannot force both VGM and VGZ output formats." << endl;
 }
 
 void printInfo(const VGMFile &vgmFile, const bool failSafeInfo)
 {
+	using std::operator<<;
+
 	afc::FastStringBuffer<char, afc::AllocMode::accurate> encoding(
 			systemEncoding.size() + (failSafeInfo ? "//TRANSLIT"_s.size() : 0));
 	encoding.append(systemEncoding.data(), systemEncoding.size());
@@ -194,18 +203,13 @@ void initLocaleContext()
 	systemEncoding = systemCharset();
 }
 
-struct UnableToLoadVGMFile : public Exception
-{
-	UnableToLoadVGMFile(const string &what, Exception * const cause) : Exception(what, cause) {}
-};
-
 unique_ptr<VGMFile> loadFile(const char * const src)
 {
 	try {
 		return unique_ptr<VGMFile>(new VGMFile(src));
 	}
 	catch (Exception &ex) {
-		throw UnableToLoadVGMFile(string("Unable to load VGM/VGZ data from '") + src + "': " + ex.what(), &ex);
+		throw Exception("Unable to load VGM/VGZ data."_s, &ex);
 	}
 }
 
@@ -216,6 +220,8 @@ typedef M::value_type P;
 // TODO add support of migrating to another VGM file version.
 int main(const int argc, char * argv[])
 try {
+	using std::operator<<;
+
 	initLocaleContext();
 
 	M tags;
@@ -319,7 +325,7 @@ try {
 		try {
 			printInfo(*vgmFilePtr, failSafeInfo);
 		}
-		catch (MalformedFormatException &ex) {
+		catch (Exception &ex) {
 			cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" <<
 					systemEncoding.c_str() << "). Try to run the program with the --info-failsafe option." << endl;
 			return 1;
@@ -351,7 +357,7 @@ try {
 	try {
 		vgmFile->save(destFile, outputFormat);
 	}
-	catch (IOException &ex) {
+	catch (Exception &ex) {
 		cerr << "Unable to save VGM/VGZ data to '" << destFile << "':\n  " << ex.what() << endl;
 		return 1;
 	}
@@ -365,10 +371,14 @@ catch (Exception &ex) {
 }
 #endif
 catch (exception &ex) {
+	using std::operator<<;
+
 	cerr << ex.what() << endl;
 	return 1;
 }
 catch (const char * const ex) {
+	using std::operator<<;
+
 	cerr << ex << endl;
 	return 1;
 }
