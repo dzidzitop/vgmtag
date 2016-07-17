@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013-2015 Dźmitry Laŭčuk
+Copyright (C) 2013-2016 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -13,9 +13,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+#include <array>
 #include <cstring>
 #include <exception>
-#include <map>
 #include <iostream>
 #include <memory>
 #include <locale>
@@ -213,8 +213,8 @@ unique_ptr<VGMFile> loadFile(const char * const src)
 	}
 }
 
-typedef map<Tag, afc::U16String> M;
-typedef M::value_type P;
+using TagValue = afc::Optional<afc::U16String>;
+using TagArray = std::array<TagValue, static_cast<int>(Tag::notes) - static_cast<int>(Tag::title)>;
 }
 
 // TODO add support of migrating to another VGM file version.
@@ -224,7 +224,8 @@ try {
 
 	initLocaleContext();
 
-	M tags;
+	TagArray tags = {TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(),
+			TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none()};
 
 	bool nonInfoSpecified = false;
 	bool forceVGM = false;
@@ -239,7 +240,7 @@ try {
 			nonInfoSpecified = true;
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
 			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags.insert(P(tag, std::move(stringToUTF16LE(::optarg, systemEncoding.c_str()))));
+			tags[static_cast<int>(tag)] = TagValue(stringToUTF16LE(::optarg, systemEncoding.c_str()));
 		} else {
 			switch (c) {
 			case 'i':
@@ -335,8 +336,11 @@ try {
 
 	const unique_ptr<VGMFile> vgmFile = loadFile(src);
 
-	for (P &entry : tags) {
-		vgmFile->setTag(entry.first, std::move(entry.second));
+	for (std::size_t i = 0, n = tags.size(); i < n; ++i) {
+		const TagValue &entry = tags[i];
+		if (entry.hasValue()) {
+			vgmFile->setTag(static_cast<Tag>(i), std::move(entry.value()));
+		}
 	}
 
 	ConstStringRef vgzExt = ".vgz"_s;
