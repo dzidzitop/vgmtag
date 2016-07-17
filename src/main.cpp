@@ -35,11 +35,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <afc/StringRef.hpp>
 #include <afc/utils.h>
 
-using namespace std;
-using namespace afc;
 using namespace vgm;
 using Tag = vgm::VGMFile::Tag;
 using Format = vgm::VGMFile::Format;
+using afc::operator"" _s;
 
 namespace {
 // TODO resolve it dynamically using argv[0]?
@@ -71,9 +70,9 @@ void printUsage(bool success, const char * const programName = ::programName)
 	using std::operator<<;
 
 	if (!success) {
-		cout << "Try '" << programName << " --help' for more information." << endl;
+		std::cout << "Try '" << programName << " --help' for more information." << std::endl;
 	} else {
-		cout <<
+		std::cout <<
 "Usage: " << programName << " [OPTION]... SOURCE [DEST]\n\
 Updates GD3 tags of the SOURCE file of the VGM or VGZ format and saves the\n\
 result to the DEST file (or to SOURCE if DEST is omitted).\n\
@@ -125,7 +124,7 @@ and capitalisation the same). Here are some standard system names:\n\
   BBC Model B+\n\
   BBC Master 128\n\
 \n\
-Report " << programName << " bugs to dzidzitop@vfemail.net" << endl;
+Report " << programName << " bugs to dzidzitop@vfemail.net" << std::endl;
 	}
 }
 
@@ -136,26 +135,26 @@ void printVersion()
 	afc::String author;
 	try {
 		const char16_t name[] = u"D\u017Amitry La\u016D\u010Duk";
-		author = utf16leToString(name, sizeof(name) - 1, systemEncoding.c_str());
+		author = afc::utf16leToString(name, sizeof(name) - 1, systemEncoding.c_str());
 	}
-	catch (Exception &ex) {
+	catch (afc::Exception &ex) {
 		author = "Dzmitry Liauchuk"_s;
 	}
 	const char * const authorPtr = author.c_str();
-	cout << PROGRAM_NAME << " " << PROGRAM_VERSION << "\n\
+	std::cout << PROGRAM_NAME << " " << PROGRAM_VERSION << "\n\
 Copyright (C) 2013-2016 " << authorPtr << ".\n\
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n\
 This is free software: you are free to change and redistribute it.\n\
 There is NO WARRANTY, to the extent permitted by law.\n\
 \n\
-Written by " << authorPtr << '.' << endl;
+Written by " << authorPtr << '.' << std::endl;
 }
 
 void printOutputFormatConflict()
 {
 	using std::operator<<;
 
-	cerr << "Cannot force both VGM and VGZ output formats." << endl;
+	std::cerr << "Cannot force both VGM and VGZ output formats." << std::endl;
 }
 
 void printInfo(const VGMFile &vgmFile, const bool failSafeInfo)
@@ -183,34 +182,34 @@ void printInfo(const VGMFile &vgmFile, const bool failSafeInfo)
 	const afc::String converter(utf16leToString(vgmFile.getTag(Tag::converter), encodingStr));
 	const afc::String notes(utf16leToString(vgmFile.getTag(Tag::notes), encodingStr));
 
-	cout << "File format:\t\t" << (vgmFile.getFormat() == Format::vgm ? "VGM" : "VGZ") << '\n';
-	cout << "--------\n";
-	cout << "Title (Latin):\t\t" << title.c_str() << '\n';
-	cout << "Title (Japanese):\t" << titleJP.c_str() << '\n';
-	cout << "Game (Latin):\t\t" << game.c_str() << '\n';
-	cout << "Game (Japanese):\t" << gameJP.c_str() << '\n';
-	cout << "System (Latin):\t\t" << system.c_str() << '\n';
-	cout << "System (Japanese):\t" << systemJP.c_str() << '\n';
-	cout << "Author (Latin):\t\t" << author.c_str() << '\n';
-	cout << "Author (Japanese):\t" << authorJP.c_str() << '\n';
-	cout << "Date:\t\t\t" << date.c_str() << '\n';
-	cout << "Converter:\t\t" << converter.c_str() << '\n';
-	cout << "Notes:\t\t\t" << notes.c_str() << endl;
+	std::cout << "File format:\t\t" << (vgmFile.getFormat() == Format::vgm ? "VGM" : "VGZ") << '\n';
+	std::cout << "--------\n";
+	std::cout << "Title (Latin):\t\t" << title.c_str() << '\n';
+	std::cout << "Title (Japanese):\t" << titleJP.c_str() << '\n';
+	std::cout << "Game (Latin):\t\t" << game.c_str() << '\n';
+	std::cout << "Game (Japanese):\t" << gameJP.c_str() << '\n';
+	std::cout << "System (Latin):\t\t" << system.c_str() << '\n';
+	std::cout << "System (Japanese):\t" << systemJP.c_str() << '\n';
+	std::cout << "Author (Latin):\t\t" << author.c_str() << '\n';
+	std::cout << "Author (Japanese):\t" << authorJP.c_str() << '\n';
+	std::cout << "Date:\t\t\t" << date.c_str() << '\n';
+	std::cout << "Converter:\t\t" << converter.c_str() << '\n';
+	std::cout << "Notes:\t\t\t" << notes.c_str() << std::endl;
 }
 
 void initLocaleContext()
 {
-	locale::global(locale(""));
-	systemEncoding = systemCharset();
+	std::locale::global(std::locale(""));
+	systemEncoding = afc::systemCharset();
 }
 
-unique_ptr<VGMFile> loadFile(const char * const src)
+std::unique_ptr<VGMFile> loadFile(const char * const src)
 {
 	try {
-		return unique_ptr<VGMFile>(new VGMFile(src));
+		return std::unique_ptr<VGMFile>(new VGMFile(src));
 	}
-	catch (Exception &ex) {
-		throw Exception("Unable to load VGM/VGZ data."_s, &ex);
+	catch (afc::Exception &ex) {
+		throw afc::Exception("Unable to load VGM/VGZ data."_s, &ex);
 	}
 }
 
@@ -242,7 +241,7 @@ try {
 			nonInfoSpecified = true;
 			const Tag tag = static_cast<Tag>(c - getopt_tagStartValue);
 			// TODO for Tag::notes - think about non-Unix platforms which use not \n as the line delimiter. The GD3 1.00 spec requires '\n'
-			tags[static_cast<int>(tag)] = TagValue(stringToUTF16LE(::optarg, systemEncoding.c_str()));
+			tags[static_cast<int>(tag)] = TagValue(afc::stringToUTF16LE(::optarg, systemEncoding.c_str()));
 		} else {
 			switch (c) {
 			case 'i':
@@ -279,25 +278,25 @@ try {
 				printUsage(false);
 				return 1;
 			default:
-				cerr << "Unhandled option: ";
+				std::cerr << "Unhandled option: ";
 				if (optionIndex == -1) {
-					cerr << '-' << static_cast<char>(c);
+					std::cerr << '-' << static_cast<char>(c);
 				} else {
-					cerr << "--" << options[optionIndex].name;
+					std::cerr << "--" << options[optionIndex].name;
 				}
-				cerr << endl;
+				std::cerr << std::endl;
 				return 1;
 			}
 		}
 		optionIndex = -1;
 	}
 	if (optind == argc) {
-		cerr << "No SOURCE file." << endl;
+		std::cerr << "No SOURCE file." << std::endl;
 		printUsage(false);
 		return 1;
 	}
 	if (optind < argc-2) {
-		cerr << "Only SOURCE and DEST files can be specified." << endl;
+		std::cerr << "Only SOURCE and DEST files can be specified." << std::endl;
 		printUsage(false);
 		return 1;
 	}
@@ -308,7 +307,7 @@ try {
 	const char *destFile;
 	if (optind < argc-1) { // there is DEST file
 		if (showInfo) {
-			cerr << "Only SOURCE can be specified with --info or --info-failsafe." << endl;
+			std::cerr << "Only SOURCE can be specified with --info or --info-failsafe." << std::endl;
 			return 1;
 		}
 		saveToSameFile = false;
@@ -320,23 +319,23 @@ try {
 
 	if (showInfo) {
 		if (nonInfoSpecified) {
-			cerr << "No other options can be specified with --info or --info-failsafe." << endl;
+			std::cerr << "No other options can be specified with --info or --info-failsafe." << std::endl;
 			return 1;
 		}
 		// TODO load only GD3 in the --info mode
-		const unique_ptr<VGMFile> vgmFilePtr = loadFile(src);
+		const std::unique_ptr<VGMFile> vgmFilePtr = loadFile(src);
 		try {
 			printInfo(*vgmFilePtr, failSafeInfo);
 		}
-		catch (Exception &ex) {
-			cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" <<
-					systemEncoding.c_str() << "). Try to run the program with the --info-failsafe option." << endl;
+		catch (afc::Exception &ex) {
+			std::cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" <<
+					systemEncoding.c_str() << "). Try to run the program with the --info-failsafe option." << std::endl;
 			return 1;
 		}
 		return 0;
 	}
 
-	const unique_ptr<VGMFile> vgmFile = loadFile(src);
+	const std::unique_ptr<VGMFile> vgmFile = loadFile(src);
 
 	for (std::size_t i = 0, n = tags.size(); i < n; ++i) {
 		const TagValue &entry = tags[i];
@@ -345,7 +344,7 @@ try {
 		}
 	}
 
-	ConstStringRef vgzExt = ".vgz"_s;
+	afc::ConstStringRef vgzExt = ".vgz"_s;
 
 	Format outputFormat;
 	if (forceVGM) {
@@ -354,7 +353,7 @@ try {
 		outputFormat = Format::vgz;
 	} else if (saveToSameFile) {
 		outputFormat = vgmFile->getFormat();
-	} else if (endsWith(destFile, destFile + std::strlen(destFile), vgzExt.begin(), vgzExt.end())) {
+	} else if (afc::endsWith(destFile, destFile + std::strlen(destFile), vgzExt.begin(), vgzExt.end())) {
 		outputFormat = Format::vgz;
 	} else {
 		outputFormat = Format::vgm;
@@ -363,28 +362,28 @@ try {
 	try {
 		vgmFile->save(destFile, outputFormat);
 	}
-	catch (Exception &ex) {
-		cerr << "Unable to save VGM/VGZ data to '" << destFile << "':\n  " << ex.what() << endl;
+	catch (afc::Exception &ex) {
+		std::cerr << "Unable to save VGM/VGZ data to '" << destFile << "':\n  " << ex.what() << std::endl;
 		return 1;
 	}
 
 	return 0;
 }
 #ifdef VGM_DEBUG
-catch (Exception &ex) {
+catch (afc::Exception &ex) {
 	ex.printStackTrace(cerr);
 	return 1;
 }
 #endif
-catch (exception &ex) {
+catch (std::exception &ex) {
 	using std::operator<<;
 
-	cerr << ex.what() << endl;
+	std::cerr << ex.what() << std::endl;
 	return 1;
 }
 catch (const char * const ex) {
 	using std::operator<<;
 
-	cerr << ex << endl;
+	std::cerr << ex << std::endl;
 	return 1;
 }
