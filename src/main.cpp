@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <cstring>
 #include <exception>
 #include <iostream>
-#include <memory>
 #include <locale>
 #include <ostream>
 #include <utility>
@@ -203,10 +202,10 @@ void initLocaleContext()
 	systemEncoding = afc::systemCharset();
 }
 
-std::unique_ptr<VGMFile> loadFile(const char * const src)
+VGMFile loadFile(const char * const src)
 {
 	try {
-		return std::unique_ptr<VGMFile>(new VGMFile(src));
+		return VGMFile(src);
 	}
 	catch (afc::Exception &ex) {
 		throw afc::Exception("Unable to load VGM/VGZ data."_s, &ex);
@@ -323,9 +322,9 @@ try {
 			return 1;
 		}
 		// TODO load only GD3 in the --info mode
-		const std::unique_ptr<VGMFile> vgmFilePtr = loadFile(src);
+		VGMFile vgmFile = loadFile(src);
 		try {
-			printInfo(*vgmFilePtr, failSafeInfo);
+			printInfo(vgmFile, failSafeInfo);
 		}
 		catch (afc::Exception &ex) {
 			std::cerr << "There are characters in the GD3 tags that cannot be mapped to the system encoding (" <<
@@ -335,12 +334,12 @@ try {
 		return 0;
 	}
 
-	const std::unique_ptr<VGMFile> vgmFile = loadFile(src);
+	VGMFile vgmFile = loadFile(src);
 
 	for (std::size_t i = 0, n = tags.size(); i < n; ++i) {
 		const TagValue &entry = tags[i];
 		if (entry.hasValue()) {
-			vgmFile->setTag(static_cast<Tag>(i), std::move(entry.value()));
+			vgmFile.setTag(static_cast<Tag>(i), std::move(entry.value()));
 		}
 	}
 
@@ -352,7 +351,7 @@ try {
 	} else if (forceVGZ) {
 		outputFormat = Format::vgz;
 	} else if (saveToSameFile) {
-		outputFormat = vgmFile->getFormat();
+		outputFormat = vgmFile.getFormat();
 	} else if (afc::endsWith(destFile, destFile + std::strlen(destFile), vgzExt.begin(), vgzExt.end())) {
 		outputFormat = Format::vgz;
 	} else {
@@ -360,7 +359,7 @@ try {
 	}
 
 	try {
-		vgmFile->save(destFile, outputFormat);
+		vgmFile.save(destFile, outputFormat);
 	}
 	catch (afc::Exception &ex) {
 		std::cerr << "Unable to save VGM/VGZ data to '" << destFile << "':\n  " << ex.what() << std::endl;

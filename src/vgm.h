@@ -1,5 +1,5 @@
 /* vgmtag - a command-line tag editor of VGM/VGZ media files.
-Copyright (C) 2013-2015 Dźmitry Laŭčuk
+Copyright (C) 2013-2016 Dźmitry Laŭčuk
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,6 +35,9 @@ namespace vgm
 		};
 
 		VGMFile(const char * const srcFile);
+		VGMFile(VGMFile &&o) : m_header(o.m_header), m_gd3Info(o.m_gd3Info), m_data(o.m_data),
+				m_dataSize(o.m_dataSize), m_format(o.m_format) { o.m_data = nullptr; }
+
 		~VGMFile() { delete[] m_data; }
 
 		void save(const char * const dest, const Format format);
@@ -68,6 +71,7 @@ namespace vgm
 
 		VGMFile(const VGMFile &) = delete;
 		VGMFile &operator=(const VGMFile &) = delete;
+		VGMFile &operator=(VGMFile &&) = delete;
 
 		void normalise();
 
