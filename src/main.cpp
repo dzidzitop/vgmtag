@@ -15,10 +15,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <array>
 #include <cassert>
+#include <clocale>
 #include <cstring>
 #include <exception>
 #include <iostream>
-#include <locale>
 #include <ostream>
 #include <utility>
 
@@ -198,7 +198,7 @@ void printInfo(const VGMFile &vgmFile, const bool failSafeInfo)
 
 void initLocaleContext()
 {
-	std::locale::global(std::locale(""));
+	std::setlocale(LC_ALL, "");
 	systemEncoding = afc::systemCharset();
 }
 
