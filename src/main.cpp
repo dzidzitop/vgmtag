@@ -14,6 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <array>
+#include <cassert>
 #include <cstring>
 #include <exception>
 #include <iostream>
@@ -214,7 +215,7 @@ unique_ptr<VGMFile> loadFile(const char * const src)
 }
 
 using TagValue = afc::Optional<afc::U16String>;
-using TagArray = std::array<TagValue, static_cast<int>(Tag::notes) - static_cast<int>(Tag::title)>;
+using TagArray = std::array<TagValue, static_cast<int>(Tag::notes) - static_cast<int>(Tag::title) + 1>;
 }
 
 // TODO add support of migrating to another VGM file version.
@@ -225,7 +226,8 @@ try {
 	initLocaleContext();
 
 	TagArray tags = {TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(),
-			TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none()};
+			TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none(), TagValue::none()};
+	assert(!tags.back().hasValue()); // Ensuring that the array is initialised completely.
 
 	bool nonInfoSpecified = false;
 	bool forceVGM = false;
